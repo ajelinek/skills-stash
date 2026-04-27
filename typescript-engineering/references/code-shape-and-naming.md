@@ -1,105 +1,73 @@
-# Code Shape And Naming
+# Code Shape and Naming
 
-Use this reference when the task is mostly about code structure, readability,
-exports, or naming consistency.
+## Code shape rules
 
-## Code Shape
+- One module, one purpose.
+- Keep modules around 200 lines of implementation code. Split past ~300 lines unless the file is unusually cohesive, declarative, or generated.
+- Keep functions around 20 lines. Decompose past ~30 lines unless the structure is still flat and obvious.
+- Use guard clauses to exit early on preconditions and keep the main path obvious.
+- Never pass more than 3 parameters to a function. If more than 3 values are needed, wrap them in an object parameter.
+- Avoid nesting deeper than 2 levels. Use early returns, extracted functions, or guard clauses to flatten control flow.
+- Export only what needs sharing. Keep internal helpers unexported.
+- Place all exported/public functions at the top of a file. Place helper/utility functions at the bottom.
+- Avoid comments. Write self-documenting code. Add a comment only when the reasoning is genuinely non-obvious and cannot be expressed in the code itself.
 
-- Each module should have one clear purpose.
-- Favor smaller modules over larger ones.
-- Keep normal modules around 200 lines of implementation code or less.
-- Once a module grows past roughly 200 lines of implementation code, stop and
-  ask whether it is carrying more than one responsibility.
-- Split modules above roughly 300 lines unless they are mostly declarations,
-  lookup tables, generated code, or another unusually cohesive format.
-- Prefer small modules and single-purpose functions.
-- Most functions should fit comfortably on a screen and stay focused on one
-  intention.
-- Keep most functions around 20 lines of implementation code or less.
-- Start simplifying or extracting once a function grows past roughly 20 lines of
-  implementation code.
-- Split functions above roughly 30 lines unless the structure is unusually flat
-  and obvious.
-- Use guard clauses to keep the happy path obvious.
-- Keep code DRY, but do not extract helpers until duplication is real and the
-  shared behavior is stable.
-- Use object parameters when a function would otherwise need too many positional
-  or optional arguments.
-- Export only what needs to be shared across modules.
-- Add comments only when the reasoning or invariant is not obvious from the code
-  itself.
+## Function style
 
-## Naming Defaults
+Use the `function` keyword for all function declarations. Do not assign arrow functions to `const` for named functions.
 
-- `camelCase` for TypeScript fields and JSON fields
-- `PascalCase` for types, interfaces, classes, and enums
-- Prefer entity-specific identifiers such as `userId` or `accountId` instead of
-  a bare `id` outside narrow local scope
-- Prefix booleans with `is`, `has`, or `can`
-- Use descriptive timestamp fields such as `createdAt`, `updatedAt`, or
-  `lastSyncedAt`
-- Use whole words where practical instead of project-local abbreviations
+```ts
+// Correct
+export function getUser(userId: string): User { ... }
+function normalizeEmail(email: string): string { ... }
 
-## Why This Matters
+// Avoid
+const getUser = (userId: string): User => { ... }
+const normalizeEmail = (email: string): string => { ... }
+```
 
-The same concept should keep the same name and shape across the codebase.
-Inconsistent naming creates unnecessary translation logic, avoidable review
-friction, and bugs that TypeScript cannot prevent on its own.
+Arrow functions are appropriate for inline callbacks and expressions — not for named, standalone functions.
 
-## Good Examples
+## Variable declarations
 
-- Good identifier: `projectId`
-- Good boolean: `hasWriteAccess`
-- Good timestamp: `archivedAt`
+Use `const` by default. Use `let` only when the value must be reassigned. Never use `var`.
+
+```ts
+const user = await getUser(userId)  // correct
+let retries = 0                     // correct — reassigned in loop
+```
+
+## Ternary statements
+
+Single-level ternaries are allowed. Never nest ternaries.
+
+```ts
+// Allowed
+const label = isActive ? 'Active' : 'Inactive'
+
+// Avoid — nested ternary
+const label = isActive ? 'Active' : isArchived ? 'Archived' : 'Inactive'
+```
+
+Do not use ternaries for complex logic. Extract a variable or helper function instead.
+
+## Naming conventions
+
+| Construct | Convention | Example |
+|---|---|---|
+| Types / classes | `PascalCase` | `UserProfile`, `LoginResult` |
+| Functions / hooks | `camelCase` | `getUser`, `useLogin` |
+| Variables | `camelCase` | `isLoading`, `authUser` |
+| Booleans | `is` / `has` / `can` prefix | `isActive`, `hasPermission`, `canEdit` |
+| Timestamps | Descriptive `Timestamp` suffix | `insertTimestamp`, `updateTimestamp` |
+| IDs | Entity-qualified | `userId`, `projectId` — never bare `id` |
+| TypeScript / JSON fields | `camelCase` | `userId`, `orgId` |
+| REST URLs | `kebab-case` | `/users`, `/user-groups` |
+| SQL tables / columns | `snake_case` | `user_id`, `insert_timestamp` |
 
 ## Avoid
 
-- Generic names like `data`, `info`, or `item` when the real concept is known
-- Bare `id` fields in shared or transport-facing shapes when the entity is not
-  obvious
-- Naming drift between related types, functions, and exports
-
-## Engineering Notes
-
-- Do not let line counts override cohesion, clarity, or a clearly better design.
-- Prefer readability and local clarity over style dogma.
-- Favor minimal comments and minimal code that still make the intent obvious.
-
-## Why These Size Targets Exist
-
-- Function-size guidance is stronger than file-size guidance. Multiple
-  maintainability sources treat long methods as an immediate smell, while file
-  size is more context-dependent.
-- ESLint documents common file-size recommendations in the 100-500 line range,
-  which supports using 200 lines as a strong target rather than an arbitrary
-  hard law.
-- ESLint's `max-lines-per-function` rule defaults to 50 lines, which is a useful
-  upper-bound smell threshold, not a healthy everyday target.
-- Google code review guidance treats code that cannot be understood quickly as
-  too complex, and explicitly calls out 50-line methods as something that may
-  need to be broken up.
-- Martin Fowler argues for very small functions and treats anything beyond a few
-  lines as worth questioning when intention is no longer obvious.
-
-## Practical Interpretation
-
-- Default target: keep normal modules around 200 lines of implementation code or
-  less.
-- Review modules once they move past 200 lines and split them if more than one
-  purpose is emerging.
-- Split modules above 300 lines unless they are mostly declarations, lookup
-  tables, generated code, or another unusually cohesive format.
-- Default target: keep most functions around 20 lines of implementation code or
-  less.
-- Review functions once they move past 20 lines and simplify them aggressively.
-- Split functions above 30 lines unless the structure is unusually flat and
-  obvious.
-
-## Research Notes
-
-- ESLint `max-lines`: `https://eslint.org/docs/latest/rules/max-lines`
-- ESLint `max-lines-per-function`: `https://eslint.org/docs/latest/rules/max-lines-per-function`
-- Google code review guidance: `https://google.github.io/eng-practices/review/reviewer/looking-for.html`
-- Martin Fowler on function length: `https://martinfowler.com/bliki/FunctionLength.html`
-- SourceMaking long method smell: `https://sourcemaking.com/refactoring/smells/long-method`
-- SourceMaking large class smell: `https://sourcemaking.com/refactoring/smells/large-class`
+- Generic names like `data`, `info`, `item`, `result` — name what it actually is.
+- Bare `id` — always qualify with the entity name.
+- Abbreviations that hide intent.
+- Naming drift between related types, functions, and exports.

@@ -1,65 +1,46 @@
-# TSConfig And Modules
+# tsconfig and Modules
 
-Use this reference when the task involves compiler flags, imports and exports,
-module configuration, build mode, or repository-scale structure.
+## Compiler defaults
 
-## Compiler Defaults
+Start every project with `"strict": true`. Consider these high-value companion flags:
 
-- Start with `strict` unless the codebase has a concrete reason not to.
-- Consider stricter companion flags where they materially improve correctness:
-  - `exactOptionalPropertyTypes`
-  - `noUncheckedIndexedAccess`
-  - `noPropertyAccessFromIndexSignature`
-  - `noImplicitOverride`
-- Use `tsc --noEmit` when the repo needs a straightforward typecheck-only CI step.
-- Use `tsc -b` when the repo uses project references and build mode.
+- `exactOptionalPropertyTypes` — distinguishes missing from explicitly `undefined`
+- `noUncheckedIndexedAccess` — index signatures return `T | undefined`, not just `T`
+- `noPropertyAccessFromIndexSignature` — forces bracket notation on index-signed types
+- `noImplicitOverride` — requires `override` on subclass method overrides
+- `useUnknownInCatchVariables` — catch bindings become `unknown` instead of `any`
 
-## Imports And Exports
+Use `tsc --noEmit` for type-checking only, or `tsc -b` for project references build mode.
 
-- Use `import type` and `export type` when a symbol is type-only.
-- Keep exported module surfaces intentional and small.
-- Avoid import tricks that make code appear valid to TypeScript but not to the
-  actual runtime or build tool.
+## Imports and exports
 
-## Module Configuration
+- Use `import type` for type-only imports.
+- Use `export type` for type-only exports and re-exports.
+- Keep exported surfaces small and intentional — export only what callers need.
 
-- Choose `module` and `moduleResolution` to match the runtime and build tool in
-  use.
-- Do not treat module settings as style preferences.
-- Prefer predictable emit over accidental compatibility.
-- Consider `verbatimModuleSyntax` when the project owns its compiler behavior
-  and wants explicit, unsurprising import and export emit.
+```ts
+import type { User } from './types'
+export type { User, UserSummary }
+```
 
-## Path Aliases
+## Module configuration
 
-- Do not add `baseUrl` or `paths` just to make imports look cleaner.
-- Path aliases do not rewrite emitted import paths.
-- If aliases are used, they must reflect real runtime or build-tool resolution.
-- Do not use `paths` to fake package resolution across a large repo when real
-  workspace or package boundaries are the correct model.
+Match `module` and `moduleResolution` to the actual runtime and build tool in use. Do not guess or copy from another project without checking.
 
-## Project References
+Consider `verbatimModuleSyntax` to enforce consistent `import type` / `export type` usage at the compiler level.
 
-Project references are a scaling tool, not a default requirement.
+## Path aliases
 
-Use them when the repo has:
+Prefer setting `baseUrl` to the source root for source-root-relative imports. This avoids `../../` traversal and works cleanly with bundler-based projects.
 
-- multiple TypeScript packages or layers
-- slow typechecking caused by project size
-- a real need for declaration boundaries and `tsc -b`
+Use `paths` selectively — only for a handful of stable cross-cutting roots. Do not use `paths` to fake package boundaries in monorepos; use proper workspaces instead.
 
-Skip them when a single-project `tsconfig` is simpler and sufficient.
+Avoid barrel (`index.ts`) files in application code. They cause circular imports, slow dev servers, and defeat bundler tree-shaking. Barrels are appropriate only at a library's single public entry point.
 
-If you do use them:
+Do not name source directories the same as `node_modules` packages.
 
-- referenced projects need `composite`
-- declaration output must be enabled
-- the repo should standardize on `tsc -b` workflows
+## Project references
 
-## Official Guidance
+Use project references only when the repository has multiple TypeScript packages, slow type-checking warrants build boundaries, or there is a real need for declaration boundaries. Requires `composite: true`, `declaration`, and `declarationMap` per package, and a root config with `"files": []` and a `references` list. Build with `tsc -b`.
 
-- TSConfig reference: `https://www.typescriptlang.org/tsconfig/`
-- Module reference: `https://www.typescriptlang.org/docs/handbook/modules/reference.html`
-- Project references: `https://www.typescriptlang.org/docs/handbook/project-references.html`
-- `baseUrl` guidance: `https://www.typescriptlang.org/tsconfig/#baseUrl`
-- `verbatimModuleSyntax`: `https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax`
+Do not use project references as a default for every repo — they add overhead that only pays off at scale.

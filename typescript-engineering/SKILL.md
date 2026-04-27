@@ -17,20 +17,10 @@ Keep the top-level approach simple: work from the existing code, make the
 smallest correct change, and tighten types, naming, and boundaries where they
 materially improve correctness or maintenance.
 
-## Use This Skill For
-
-- Writing or refactoring TypeScript application code
-- Reviewing TypeScript for typing gaps, maintainability, and configuration
-- Designing domain types, public contracts, and state models
-- Improving narrowing, result modeling, and import or export boundaries
-- Tightening `tsconfig` defaults, module settings, and typecheck workflows
-- Cleaning up naming and module shape in a TypeScript codebase
-
-## Do Not Use This Skill For
-
-- Questions that are primarily about another tool or domain rather than
-  TypeScript itself
-- Generic style churn that does not improve correctness, clarity, or safety
+The best code is the code not written. Do not add new modules, helpers,
+wrappers, or abstractions by default. Favor small, well-judged edits to
+existing cohesive modules when that keeps the design cleaner and avoids code
+bloat.
 
 ## Workflow
 
@@ -40,6 +30,8 @@ materially improve correctness or maintenance.
 - Match established architecture unless it is clearly causing a bug,
   maintenance problem, or safety issue.
 - Prefer the smallest change that fully solves the task.
+- Prefer changing an existing cohesive module over adding a new file or layer
+  when the change naturally belongs there.
 - Remove failed or superseded approaches instead of layering partial fixes.
 - Avoid speculative abstractions, compatibility code, and helper sprawl unless
   there is a concrete need.
@@ -48,6 +40,8 @@ materially improve correctness or maintenance.
 
 - Prefer `unknown` over `any` at boundaries, then narrow explicitly.
 - Use the simplest type construct that fits the problem.
+- All types belong in a top-level `types/` folder. Do not co-locate types inside
+  domain modules, feature folders, or subfolders. Import from `types/`.
 - Prefer `type` for new modeling work. Use `interface` only when you specifically
   need interface behavior such as declaration merging or class implementation
   patterns already established in the codebase.
@@ -74,11 +68,19 @@ modeling, type design, narrowing, result types, or assertion strategy.
   as a strong sign to extract helpers or simplify control flow.
 - If a function grows past roughly 30 lines of implementation code, decompose it
   unless the structure is still unusually flat and obvious.
+- Use the `function` keyword for named function declarations. Do not assign
+  arrow functions to `const` for named, standalone functions.
+- Use `const` by default. Use `let` only when the value must be reassigned.
+  Never use `var`.
+- Single-level ternaries are allowed. Never nest ternaries. Extract a variable
+  or helper function for anything more complex.
 - Use clear names instead of abbreviations that hide intent.
 - Use guard clauses to keep the main path obvious.
+- Avoid nesting deeper than 2 levels.
+- Never pass more than 3 parameters to a function; wrap additional values in
+  an object parameter.
+- Place exported/public functions at the top of a file; helpers at the bottom.
 - Keep code DRY, but do not extract helpers prematurely.
-- Use object parameters when a function would otherwise take too many
-  positional or optional arguments.
 
 Read `./references/code-shape-and-naming.md` when the task involves structure,
 identifiers, exports, comments, or code organization.
@@ -99,19 +101,10 @@ Read `./references/tsconfig-and-modules.md` when the task involves compiler
 flags, imports and exports, module configuration, path aliases, or project
 references.
 
-### 5. Reuse concrete patterns when they fit
-
-- Copy and adapt `./examples/discriminated-union.ts` for exhaustive unions.
-- Copy and adapt `./examples/type-predicate.ts` for narrowing from `unknown`.
-- Copy and adapt `./examples/import-type.ts` for explicit type-only imports and
-  exports.
-- Read `./examples/tsconfig-strict.jsonc` for a practical strict baseline.
-- Read `./examples/project-references/` when the repo is large enough to justify
-  build-mode and reference boundaries.
-
 ## Quality Bar
 
 - The change follows the existing architecture or intentionally improves it.
+- All types are in the `types/` folder, not scattered across domain modules.
 - Types make important invariants clearer instead of adding ceremony.
 - Narrowing does the real safety work instead of broad assertions.
 - Naming and exports are consistent across the codebase.

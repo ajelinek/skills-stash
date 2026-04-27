@@ -25,6 +25,10 @@ It explicitly excludes several content classes from the SpecFlow bundle:
 
 This document is the follow-on plan for that excluded material.
 
+Some shared support capabilities may live inside the SpecFlow bundle without being
+numbered SpecFlow workflow skills. Those support skills are not tracked in this
+standalone migration plan.
+
 The goal here is not to preserve the old `vibing` file structure. The goal is to
 extract the durable guidance, package it as standalone skills, and make each skill
 useful on its own outside SpecFlow.
@@ -59,10 +63,6 @@ skill/
 ├── astro.js/
 │   └── SKILL.md
 ├── testing/
-│   └── SKILL.md
-├── playwright/
-│   └── SKILL.md
-├── test-context-and-data-generation/
 │   ├── SKILL.md
 │   ├── references/
 │   └── examples/
@@ -219,6 +219,11 @@ SpecFlow-owned exception:
 These should only become standalone skills if their behavior is still useful after
 removing persona framing and project-specific assumptions.
 
+SpecFlow-owned exception:
+
+- Research behavior derived from `research-agent.md` is packaged as
+  `SpecFlow/skills/deep-research/`, not as a standalone `skill/` package.
+
 ---
 
 ## Proposed Skill Mapping
@@ -235,9 +240,7 @@ source documents into a smaller set of broader skills.
 | `react` | `react-component-guidelines.md`, `react-state-management.md`, `react-state-with-swr.md`, `react-testing-guidelines.md`, plus React-specific portions of `foundational-ui-components.md` and relevant common UI rules | One broad React skill covering components, state, SWR, testing guidance, shared UI practices, and React-based foundational component examples |
 | `solid.js` | `solidjs-component-guidelines.md`, `solid-state-management.md`, `solid-testing-guidelines.md`, plus relevant common UI rules and rebuilt Solid-based foundational component examples | One broad Solid skill with shared UI practices and Solid-specific foundational component examples |
 | `astro.js` | `astro-component-guidelines.md`, `astro-project-structure.md`, plus relevant common UI rules where applicable | One broad Astro skill with shared UI practices where they truly apply |
-| `testing` | `test-general.md` | Broad testing philosophy and shared testing guidance |
-| `playwright` | `test-e2e.md`, `test-e2e-page-object.md`, `test-e2e-tags.md`, `test-automation-engineer.md`, Playwright-specific portions of setup patterns | Kept separate because the old material is explicitly Playwright-centric and substantial |
-| `test-context-and-data-generation` | `test-context.md`, `test-setup-examples.md`, `test-context-and-data-generation-pattern.md` | Example-heavy standalone skill with substantial reusable code patterns; should use `references/` and `examples/` |
+| `testing` | `test-general.md`, `test-context.md`, `test-setup-examples.md`, `test-e2e.md`, `test-e2e-page-object.md`, `test-e2e-tags.md`, `test-context-and-data-generation-pattern.md` | Merged skill covering testing philosophy, unit/integration/E2E patterns, Playwright, page object model, TestContext system, and test data generation; uses `references/` and `examples/` |
 | `ui-engineering` | `ui-component-guidelines.md`, `ui-foundational-component-principles.md`, `ui-accessibility-guidelines.md`, `ui-form-management.md` | Standalone cross-framework UI engineering skill for shared component principles, accessibility, semantic HTML, and form UX guidance |
 | `firebase-dynamic-ports-setup` | `firebase-dynamic-ports-setup.md` | Example-heavy standalone setup skill with real scripts and config examples |
 | `seo` | `seo-specialist.md`, `astro-seo.md` | Keep as a standalone skill rather than folding into `astro.js` |
@@ -280,27 +283,34 @@ This gives you a cleaner split:
 
 ### Testing Recommendation
 
-Recommendation: keep `testing` and `playwright` as separate skills, and also keep
-`test-context-and-data-generation` as its own standalone skill.
+Recommendation: merge `testing`, `playwright`, and `test-context-and-data-generation`
+into a single unified `testing` skill with supporting `references/` and `examples/`.
 
 Reasoning:
 
-- `test-general.md` is framework-agnostic and covers overall testing philosophy.
-- Gherkin authoring guidance is already covered by `SpecFlow/skills/202-spec-design`, so
-  `test-gherkin-definition.md` does not need to become a standalone `skill/` package.
-- `test-context.md` and the test-data generation pattern are substantial,
-  implementation-heavy material that work better as their own example-rich skill.
-- `test-e2e.md` is explicitly titled `Playwright E2E Testing Guidelines` and the page
-  object material is Playwright-specific.
-- The old agent and setup materials also repeatedly reference Playwright as a distinct
-  capability.
+- All three planned skills share the same domain — writing, organizing, and managing
+  tests — and would frequently be installed together.
+- A unified skill produces cleaner triggering: one skill fires whenever the user writes
+  any test, whether unit, integration, or E2E.
+- The Playwright and TestContext material is substantial but structured; it belongs in
+  `references/` and `examples/` under the unified skill rather than as separate top-level
+  skills.
+- `test-gherkin-definition.md` does not need to become a standalone `skill/` package;
+  Gherkin authoring is already covered by `SpecFlow/skills/202-spec-design`.
+- Keeping three narrow testing skills would create ambiguous trigger overlap and require
+  users to install multiple skills to get complete testing guidance.
 
-This gives you three install-worthy testing-related skills instead of many small
-testing micro-skills:
+This gives you one cohesive install-worthy testing skill:
 
-- `testing` for overall testing strategy and shared patterns
-- `playwright` for E2E implementation details
-- `test-context-and-data-generation` for reusable test data and environment patterns
+- `testing` for the full testing surface: philosophy, unit tests, integration tests,
+  E2E with Playwright, page object model, TestContext system, and test data generation
+
+The `testing` skill should use the rich layout:
+
+- `SKILL.md` as the navigation hub (≤500 lines)
+- `references/` for deep domain content (philosophy, unit, integration, e2e, POM,
+  TestContext, anti-patterns)
+- `examples/` for copyable TypeScript code and implementation guides
 
 ### UI Recommendation
 
@@ -334,7 +344,7 @@ The following skills are intentional exceptions to the "larger technology-based
 skills" default because they contain substantial reusable code examples and should be
 packaged with supporting files:
 
-- `test-context-and-data-generation`
+- `testing`
 - `firebase-dynamic-ports-setup`
 
 For these skills:
@@ -413,8 +423,6 @@ more project-shaped items.
 
 1. `typescript-engineering`
 2. `testing`
-3. `playwright`
-4. `test-context-and-data-generation`
 
 ### Wave 2: Frontend technology skills
 
@@ -456,8 +464,7 @@ These decisions should be made before large-scale authoring begins.
 
 1. Confirm the top-level catalog names: `typescript-engineering`, `firebase`,
    `postgres-database-design`, `apollo`, `react`, `solid.js`, `astro.js`,
-   `ui-engineering`, `testing`, `playwright`, `test-context-and-data-generation`,
-   and `firebase-dynamic-ports-setup`.
+   `ui-engineering`, `testing`, and `firebase-dynamic-ports-setup`.
 2. Confirm the target depth for rebuilt foundational component examples in `react`
    and `solid.js`.
 3. Confirm how much non-Firebase backend implementation guidance, if any, still
@@ -470,6 +477,4 @@ These decisions should be made before large-scale authoring begins.
 ## Immediate Next Steps
 
 1. Create `skill/MIGRATION-STATUS.md` with the larger skill inventory from this plan.
-2. Reuse the existing `skill/deep-research/` package instead of creating a separate
-   `research` skill.
-3. Start Wave 1 with `typescript-engineering`.
+2. Start Wave 1 with `typescript-engineering`.

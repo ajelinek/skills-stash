@@ -22,9 +22,9 @@ SpecFlow-owned exception:
 
 | Status | Count |
 | --- | --- |
-| Planned | 12 |
+| Planned | 9 |
 | In progress | 0 |
-| Complete | 1 |
+| Complete | 2 |
 | Decision pending | 0 |
 
 ---
@@ -34,18 +34,16 @@ SpecFlow-owned exception:
 | # | Skill | Primary source material | Status | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | `typescript-engineering` | `rules/common/foundation/*`, `fragments/engineer-*`, `rules/common/data/data-attribute-naming-conventions.md`, selected generally useful guidance from `agents/backend-engineer.md` | Complete | Created as a standalone TypeScript engineering skill with focused references for type modeling, code shape, and TSConfig or module choices, plus concrete examples for discriminated unions, predicates, type-only imports, and project references |
-| 2 | `firebase` | `rules/common/backend/firebase-integration.md`, `rules/common/data/data-object-store-persistent.md` | Planned | Firebase-specific application, Firestore, and document-store guidance |
-| 3 | `postgres-database-design` | `rules/common/data/data-relational-persistent.md`, PostgreSQL-adapted guidance derived from `rules/common/data/data-attribute-naming-conventions.md` | Planned | PostgreSQL-focused relational schema, persistence design, and database-specific naming guidance |
-| 4 | `apollo` | `rules/apollo/*` | Planned | One larger Apollo and GraphQL skill |
-| 5 | `react` | `rules/react/*`, relevant common UI rules, React-specific portions of `patterns/foundational-ui-components.md` | Planned | Broad React skill with React-based foundational component examples |
-| 6 | `solid.js` | `rules/solid.js/*`, relevant common UI rules, rebuilt Solid-based foundational component examples | Planned | Broad Solid skill with Solid-specific foundational component examples |
-| 7 | `astro.js` | `rules/astro.js/*`, relevant common UI rules | Planned | Broad Astro skill with shared UI guidance where applicable |
-| 8 | `testing` | `test-general.md` | Planned | Shared testing philosophy and guidance; Gherkin authoring is covered by `SpecFlow/skills/202-spec-design` |
-| 9 | `playwright` | `test-e2e.md`, `test-e2e-page-object.md`, `test-e2e-tags.md`, `agents/test-automation-engineer.md` | Planned | Playwright-specific E2E implementation skill |
-| 10 | `test-context-and-data-generation` | `test-context.md`, `test-setup-examples.md`, `patterns/test-context-and-data-generation-pattern.md` | Planned | Example-heavy skill with `references/` and `examples/` |
-| 11 | `ui-engineering` | `rules/common/ui/ui-component-guidelines.md`, `rules/common/ui/ui-foundational-component-principles.md`, `rules/common/ui/ui-accessibility-guidelines.md`, `rules/common/ui/ui-form-management.md` | Planned | Cross-framework UI engineering skill for shared component principles, accessibility, semantic HTML, and form UX guidance |
-| 12 | `firebase-dynamic-ports-setup` | `patterns/firebase-dynamic-ports-setup.md` | Planned | Example-heavy operational setup skill |
-| 13 | `seo` | `agents/seo-specialist.md`, `patterns/astro-seo.md` | Planned | Standalone SEO skill |
+| 2 | `testing` | `test-general.md`, `test-context.md`, `test-setup-examples.md`, `test-e2e.md`, `test-e2e-page-object.md`, `test-e2e-tags.md`, `patterns/test-context-and-data-generation-pattern.md` | Complete | Unified testing skill merging original `testing`, `playwright`, and `test-context-and-data-generation` plans; rich layout with `references/` and `examples/` including full TestContext implementation guide |
+| 3 | `firebase` | `rules/common/backend/firebase-integration.md`, `rules/common/data/data-object-store-persistent.md` | Planned | Firebase-specific application, Firestore, and document-store guidance |
+| 4 | `postgres-database-design` | `rules/common/data/data-relational-persistent.md`, PostgreSQL-adapted guidance derived from `rules/common/data/data-attribute-naming-conventions.md` | Planned | PostgreSQL-focused relational schema, persistence design, and database-specific naming guidance |
+| 5 | `apollo` | `rules/apollo/*` | Planned | One larger Apollo and GraphQL skill |
+| 6 | `react` | `rules/react/*`, relevant common UI rules, React-specific portions of `patterns/foundational-ui-components.md` | Planned | Broad React skill with React-based foundational component examples |
+| 7 | `solid.js` | `rules/solid.js/*`, relevant common UI rules, rebuilt Solid-based foundational component examples | Planned | Broad Solid skill with Solid-specific foundational component examples |
+| 8 | `astro.js` | `rules/astro.js/*`, relevant common UI rules | Planned | Broad Astro skill with shared UI guidance where applicable |
+| 9 | `ui-engineering` | `rules/common/ui/ui-component-guidelines.md`, `rules/common/ui/ui-foundational-component-principles.md`, `rules/common/ui/ui-accessibility-guidelines.md`, `rules/common/ui/ui-form-management.md` | Planned | Cross-framework UI engineering skill for shared component principles, accessibility, semantic HTML, and form UX guidance |
+| 10 | `firebase-dynamic-ports-setup` | `patterns/firebase-dynamic-ports-setup.md` | Planned | Example-heavy operational setup skill |
+| 11 | `seo` | `agents/seo-specialist.md`, `patterns/astro-seo.md` | Planned | Standalone SEO skill |
 
 ---
 
@@ -53,10 +51,8 @@ SpecFlow-owned exception:
 
 ### Wave 1
 
-1. `typescript-engineering`
-2. `testing`
-3. `playwright`
-4. `test-context-and-data-generation`
+1. `typescript-engineering` ✓
+2. `testing` ✓
 
 ### Wave 2
 
@@ -78,11 +74,12 @@ SpecFlow-owned exception:
 
 ---
 
-## Reused Existing Skill
+## Moved To SpecFlow
 
-The existing `skill/deep-research/` skill will be used as-is.
+The `deep-research` package is no longer part of the standalone `skill/` catalog.
 
-No separate `research` migration item is planned.
+It now lives at `SpecFlow/skills/deep-research/` as a SpecFlow-bundled support
+skill, similar in role to other unnumbered support capabilities.
 
 ---
 
@@ -101,7 +98,7 @@ All migrated skills must satisfy these checks before being marked complete:
 
 Additional expectation for example-heavy skills:
 
-- `test-context-and-data-generation`
+- `testing`
 - `firebase-dynamic-ports-setup`
 
 These should preserve practical code examples as supporting files rather than forcing
