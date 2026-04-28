@@ -9,17 +9,43 @@ For everything else, install from the public catalog at [skills.sh](https://skil
 
 ---
 
+## Quick install
+
+Run this one-liner to launch the interactive installer without cloning the repo:
+
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/ajelinek/skills-stash/main/install.sh)
+```
+
+---
+
 ## Skills in this directory
 
-| Skill                    | What it does                                                                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typescript-engineering` | Core TypeScript implementation practices: type modeling, error handling, naming conventions, module shape, and TSConfig guidance                      |
-| `testing`                | Full testing surface: philosophy, unit tests, integration tests, E2E with Playwright, page object model, TestContext system, and test data generation |
-| `react`                  | React components, state management, SWR, Zustand, shared UI patterns, and foundational component examples                                             |
-| `solid.js`               | SolidJS components, signals, stores, context, async patterns, and testing with `@solidjs/testing-library`                                             |
-| `astro.js`               | Astro 5 project structure, component patterns, content collections, server rendering, middleware, and Astro Actions                                   |
-| `ui-engineering`         | Cross-framework UI principles: component boundaries, accessibility, semantic HTML, styling tokens, and form UX                                        |
-| `astro-seo`              | Astro-specific SEO: structured data, IndexNow, performance SEO, and meta management                                                                   |
+Install all skills at once:
+
+```sh
+npx skills add ajelinek/skills-stash typescript-engineering
+npx skills add ajelinek/skills-stash testing
+npx skills add ajelinek/skills-stash react
+npx skills add ajelinek/skills-stash solid.js
+npx skills add ajelinek/skills-stash astro.js
+npx skills add ajelinek/skills-stash ui-engineering
+npx skills add ajelinek/skills-stash astro-seo
+npx skills add ajelinek/skills-stash cmux-workspace-builder
+npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
+```
+
+| Skill                          | What it does                                                                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript-engineering`       | Core TypeScript implementation practices: type modeling, error handling, naming conventions, module shape, and TSConfig guidance                      |
+| `testing`                      | Full testing surface: philosophy, unit tests, integration tests, E2E with Playwright, page object model, TestContext system, and test data generation |
+| `react`                        | React components, state management, SWR, Zustand, shared UI patterns, and foundational component examples                                             |
+| `solid.js`                     | SolidJS components, signals, stores, context, async patterns, and testing with `@solidjs/testing-library`                                             |
+| `astro.js`                     | Astro 5 project structure, component patterns, content collections, server rendering, middleware, and Astro Actions                                   |
+| `ui-engineering`               | Cross-framework UI principles: component boundaries, accessibility, semantic HTML, styling tokens, and form UX                                        |
+| `astro-seo`                    | Astro-specific SEO: structured data, IndexNow, performance SEO, and meta management                                                                   |
+| `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
+| `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 
 ---
 
