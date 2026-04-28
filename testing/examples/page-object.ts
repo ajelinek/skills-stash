@@ -102,8 +102,8 @@ export class DashboardPage {
 // import { DashboardPage } from '../../page-objects/DashboardPage'
 //
 // test('should display dashboard @dashboard @happyPath @TS100', async ({ page, ctx }) => {
-//   const { dashboardPage, authUser } = await setUp(page, ctx)
+//   const { dashboardPage } = await setUp(page, ctx)
 //   await dashboardPage.navigateTo()
 //   await dashboardPage.verifyLoaded()
-//   await expect(page.getByText(authUser.firstName)).toBeVisible()  // single-line → in spec
+//   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()  // single-line → in spec
 // })

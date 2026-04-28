@@ -1,8 +1,11 @@
-# E2E Testing with Playwright
+# UI E2E Testing with Playwright
+
+This file covers browser-based end-to-end tests only. If the scenario is API
+only, keep it in Vitest and read `./e2e-api.md`.
 
 ## Mandatory File Structure
 
-All E2E tests must follow this exact layout:
+All UI E2E tests must follow this exact layout:
 
 ```
 tests/
@@ -40,10 +43,16 @@ async function setUp(page: Page, ctx: TestContext, testData: DataGenObject = {})
     userDetails: [{ _id: 'U1' }],
   }
 
-  const { selector, authUser } = await ctx.setupEnv(baseData, testData, page, 'U1', apiBasedLogin)
+  const { selector } = await ctx.setupEnv({
+    baseData,
+    testData,
+    page,
+    authShortId: 'U1',
+    loginFn: apiBasedLogin,
+  })
   const dashboardPage = new DashboardPage(page)
 
-  return { dashboardPage, authUser, selector }
+  return { dashboardPage, selector }
 }
 ```
 
@@ -97,6 +106,9 @@ test('should handle invalid credentials @auth @errorPath @TS3')
 test('should display empty service list @services @empty-state @TS4')
 ```
 
+These tags classify the intent of a Playwright spec. They do not change the
+top-level test category: a Playwright spec is still a UI E2E test.
+
 Tag placement rules:
 - Tags always go at the end of the test description string
 - Include `@TS#` with a unique sequential number
@@ -115,17 +127,17 @@ Tag placement rules:
 
 ## Assertions in Spec Files
 
-Single-line assertions belong in the spec file, using locators exposed by the
-page object (not raw `page.locator()` calls):
+Single-line semantic assertions may stay in the spec file when that matches the
+repository's conventions. Keep interactions and reusable assertion flows in
+page objects. Do not scatter raw locator-driven workflows through spec files.
 
 ```typescript
 test('should show user name after login @auth @happyPath @TS5', async ({ page, ctx }) => {
-  const { dashboardPage, authUser } = await setUp(page, ctx)
+  const { dashboardPage } = await setUp(page, ctx)
 
   await dashboardPage.navigateTo()
 
   // Single-line assertions go directly in the test
-  await expect(page.getByText(authUser.firstName)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
 })
 ```

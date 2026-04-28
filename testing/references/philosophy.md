@@ -2,41 +2,72 @@
 
 ## Test Priority Order
 
-Prefer E2E > Integration > Unit.
+Prefer the highest-confidence boundary that matches the behavior under test.
 
-This is not about coverage percentage — it is about confidence. A test that
-exercises the real browser, the real network layer, and the real database
-proves more than one that exercises only a service class in isolation.
+This is not a strict `UI E2E > API E2E > Integration > Unit` ladder for every
+scenario. A browser test is not automatically better than an API E2E test when
+no browser behavior matters, and an API E2E test is not automatically better
+than an integration test when the behavior lives entirely below the HTTP
+boundary.
 
-Only drop down to a cheaper test type when the more expensive one is genuinely
-impractical for the scenario at hand.
+Use this decision order instead:
+
+- Browser journey or visual workflow: UI E2E
+- Consumer-visible HTTP behavior: API E2E
+- In-process collaboration between modules or DB-backed services: integration
+- Isolated branching logic or pure transforms: unit
+
+Only drop down to a cheaper test type when the higher boundary does not add
+meaningful confidence for the scenario at hand.
 
 ## When to Write Each Type
 
-### E2E Tests (Playwright)
+### UI E2E Tests (Playwright)
 
-Write E2E tests for:
+Write UI E2E tests for:
 
 - Critical user journeys that span multiple pages or application layers
 - Authentication and authorization flows
 - Workflows a user would actually perform from a browser
 - Features where correctness depends on the full stack working together
 
-Do not write E2E tests for:
+Do not write UI E2E tests for:
 - Pure data transformation logic that has no UI surface
-- Scenarios that would require mocking the browser environment
+- Scenarios where no browser behavior matters and an API E2E test proves the
+  same thing faster
+
+### API E2E Tests (Vitest)
+
+Write API E2E tests for:
+
+- Public REST, GraphQL, RPC, or webhook behavior at the HTTP boundary
+- Authentication, authorization, validation, routing, serialization, and error
+  envelopes exposed to API consumers
+- Backend systems with no browser UI where the API is the product surface
+- Cross-service flows that are initiated through the public API and need a real
+  started local endpoint
+
+Do not write API E2E tests for:
+
+- Tests that import controllers, route handlers, or service classes directly
+- In-process helper-driven coverage that never targets a consumer-visible HTTP
+  endpoint
+- UI workflows that require a browser; use Playwright UI E2E instead
 
 ### Integration Tests (Vitest)
 
 Write integration tests for:
 
 - Service layer methods that read from or write to a real database
-- API endpoint handlers where you can spin up a real DB connection
+- API handler logic where you need real database state but do not need a fully
+  started consumer-visible endpoint
 - Cross-component data flows where multiple services interact
 - Business logic that requires real relationship data to be meaningful
+- In-process HTTP coverage where a helper talks to app internals rather than a
+  started local API server
 
 Do not write integration tests for:
-- Logic that is already fully covered by E2E tests at lower cost
+- Public API behavior whose main risk is the HTTP boundary itself
 - Things that can be tested with a pure function without a database
 
 ### Unit Tests (Vitest)
@@ -114,9 +145,11 @@ Do not perform multiple distinct actions in a single test.
 
 ## File Organization
 
-- Unit and integration tests live in `__tests__/` folders next to the code
-  they test
-- Test files are named `[module-name].test.ts` or `[module-name].test.tsx`
-- E2E tests live in `tests/spec/` organized by feature area
+- Unit and integration tests often live in `__tests__/` folders next to the
+  code they test and may share a Vitest project
+- Test files are named according to the repository's existing pattern
+- API E2E tests usually live in `tests/api/` or `tests/e2e-api/` and often run
+  in a dedicated Vitest project or config
+- UI E2E tests live in `tests/spec/` organized by feature area
 - Page objects live in `tests/page-objects/`
 - One concept per file — when a test file grows large, split by sub-feature

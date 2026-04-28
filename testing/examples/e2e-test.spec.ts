@@ -1,9 +1,10 @@
 /**
- * E2E test example — Dashboard navigation
+ * UI E2E test example — Dashboard navigation
  *
- * Shows the standard E2E spec file pattern:
+ * Shows the standard UI E2E spec file pattern:
  * - Import from @e2e/fixtures (never from @playwright/test directly)
  * - setUp() function called inside each test (not beforeEach)
+ * - testData can override MODULE_BASE_DATA by reusing the same shorthand key
  * - All page interactions via page objects only
  * - Single-line assertions in the test using page.getBy*() or expect()
  * - Tags at the end of test description: feature + type + @TS#
@@ -29,17 +30,17 @@ async function setUp(page: Page, ctx: TestContext, testData: DataGenObject = {})
     userDetails: [{ _id: 'U1' }],
   }
 
-  const { selector, authUser } = await ctx.setupEnv(
+  const { selector } = await ctx.setupEnv({
     baseData,
     testData,
     page,
-    'U1',
-    apiBasedLogin
-  )
+    authShortId: 'U1',
+    loginFn: apiBasedLogin,
+  })
 
   const dashboardPage = new DashboardPage(page)
 
-  return { dashboardPage, authUser, selector }
+  return { dashboardPage, selector }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -47,12 +48,12 @@ async function setUp(page: Page, ctx: TestContext, testData: DataGenObject = {})
 test(
   'should display dashboard after login @dashboard @happyPath @TS100',
   async ({ page, ctx }) => {
-    const { dashboardPage, authUser } = await setUp(page, ctx)
+    const { dashboardPage } = await setUp(page, ctx)
 
     await dashboardPage.navigateTo()
 
     await dashboardPage.verifyLoaded()
-    await expect(page.getByText(authUser.firstName)).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard/)
   }
 )
 
@@ -87,7 +88,7 @@ test(
     const { dashboardPage, selector } = await setUp(page, ctx, {
       userGroups: [{ _id: 'G1', orgId: 'O1' }],
       activities: [{ _id: 'A1', orgId: 'O1' }],
-      services: [{ _id: 'S1', userGroupId: 'G1', activityId: 'A1', userId: 'U1' }],
+      services: [{ _id: 'S1', userGroupId: 'G1', activityId: 'A1', performedByUserId: 'U1' }],
     })
 
     const service = selector.getService('S1')

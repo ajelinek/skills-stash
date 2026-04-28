@@ -2,26 +2,40 @@
 
 ## Overview
 
-TestContext is the centralized system for managing test data in integration and
-E2E tests. It coordinates data generation, ID management, database insertion,
-and authentication setup through a unified API.
+TestContext is the centralized system for managing test data in integration,
+API E2E, and UI E2E tests. It coordinates data generation, ID management,
+database insertion, and authentication setup through a unified API.
 
-**If the project does not already have a TestContext, stop and ask before
-creating one.** Building the system from scratch is a significant effort.
-See `./examples/test-context-implementation.md` for the full build guide.
+**If the project does not already have a TestContext, gather the data model
+before creating one.** The system is built around your specific entities and
+their relationships. Ask the user for a schema file, type definitions,
+`schema.prisma`, SQL DDL, or a prose description. If none exists, analyze
+the codebase to infer it. See `./examples/test-context-implementation.md`
+**Step 0** for the full data model discovery workflow.
 
 ## Core Rules
 
-### Never instantiate TestContext directly in test files
+### Prefer the repository's standard TestContext entry point
 
-Always use the `ctx` fixture or a `setUp()` helper. Direct calls to
-`TestContext.create()` in test files are not allowed.
+Use the repository's standard fixture or helper pattern.
+
+- In UI E2E tests, that usually means a `ctx` fixture.
+- In backend, integration, or API E2E tests, that may mean a local
+  `setupTest()` helper that creates `TestContext` directly.
+
+Do not invent a new access pattern when the repository already has one.
 
 ### All initial data goes through `ctx.setupEnv()`
 
 ```typescript
 // Good: all initial data in one setupEnv call
-const { selector, authUser } = await ctx.setupEnv(baseData, testData, page, 'U1', loginFn)
+const { selector } = await ctx.setupEnv({
+  baseData,
+  testData,
+  page,
+  authShortId: 'U1',
+  loginFn,
+})
 
 // Bad: data created outside of setupEnv for initial setup
 await ctx.db.users.insertOne({ ... })
@@ -30,11 +44,12 @@ await ctx.db.users.insertOne({ ... })
 Additional data created as part of a test scenario (not initial setup) may
 use `ctx.scenario` builder methods.
 
-### Additive data only
+### Additive setup, environment-owned cleanup
 
 Test data is only ever added, never deleted between tests. Global setup handles
-table truncation and schema recreation. Individual test setups only insert data.
-Tests do not clean up data they created.
+environment reset, truncation, schema recreation, or emulator cleanup.
+Individual test setups only insert data. Tests do not perform per-test teardown
+for seeded data.
 
 ## Shorthand ID System
 
@@ -60,20 +75,26 @@ Shorthand IDs are reusable across different test files. The same `U1` in two
 different test files refers to two different database users — the IdProvider
 creates a fresh UUID for each test context.
 
-**Critical:** Shorthand IDs must be unique within a single `setupEnv()` call.
-Never use the same shorthand ID in both `baseData` and `testData` — this
-creates duplicate key violations.
+**Critical:** Shorthand IDs are test-local aliases.
+
+- Reusing `U1` across different tests is expected and safe because each test
+  gets a fresh context and fresh real IDs.
+- Within one seeded dataset, IDs must be unambiguous.
+- If the repository supports key-based merge, reusing the same shorthand ID in
+  `baseData` and `testData` is how you override module defaults.
+- Key-based override is usually replace-by-entity, not deep merge. Repeat
+  required relationship fields when overriding.
 
 ## setupEnv() Signature
 
 ```typescript
-ctx.setupEnv(
+ctx.setupEnv({
   baseData: DataGenObject,    // Module-level base data
-  testData: DataGenObject,    // Test-specific additions/overrides
-  page?: Page,               // Playwright page (omit for non-browser tests)
-  authShortId?: string,      // Shorthand ID of user to authenticate as
-  loginFn?: Function,        // Login function (e.g., apiBasedLogin)
-)
+  testData?: DataGenObject,   // Test-specific additions/overrides
+  page?: Page,                // Playwright page (omit for API E2E and other non-browser tests)
+  authShortId?: string,       // Shorthand ID of user to authenticate as
+  loginFn?: Function,         // Login function (repo-specific)
+})
 ```
 
 Returns `{ selector, authUser }` where:
@@ -85,7 +106,7 @@ Returns `{ selector, authUser }` where:
 Use the `selector` to retrieve seeded data by shorthand ID:
 
 ```typescript
-const { selector } = await ctx.setupEnv(baseData, testData)
+const { selector } = await ctx.setupEnv({ baseData, testData })
 
 const user = selector.getUser('U1')       // returns the full user entity
 const org = selector.getOrg('O1')         // returns the full org entity
@@ -118,33 +139,36 @@ Always check that foreign key relationships are included in test data.
 Creating a `Service` without providing its required `UserGroup`, `Activity`,
 and `User` will fail at insertion time.
 
-## Avoiding Duplicate Key Violations
+## Key-Based Overrides
 
-This is the most common TestContext error. Never reuse a shorthand ID between
-`baseData` and `testData`:
+When the repository implements merge-by-key, reuse the same shorthand ID to
+override module defaults:
 
 ```typescript
-// BAD: U1 appears in both baseData and testData
+// Good: testData overrides the base entity with the same shorthand key
 const MODULE_BASE_DATA = {
   orgs: [{ _id: 'O1' }],
   users: [{ _id: 'U1', orgId: 'O1' }],
   userDetails: [{ _id: 'U1' }],
 }
 
-await ctx.setupEnv(MODULE_BASE_DATA, {
-  users: [{ _id: 'U1', email: 'custom@example.com' }],  // ← duplicate!
-})
-
-// GOOD: use a new shorthand ID for test-specific data
-await ctx.setupEnv(MODULE_BASE_DATA, {
-  users: [{ _id: 'U2', orgId: 'O1', email: 'custom@example.com' }],  // ← U2
-  userDetails: [{ _id: 'U2' }],
+await ctx.setupEnv({
+  baseData: MODULE_BASE_DATA,
+  testData: {
+    users: [{ _id: 'U1', orgId: 'O1', email: 'custom@example.com' }],
+  },
 })
 ```
 
+Use a new shorthand ID when you want an additional entity rather than a
+replacement.
+
+If the repository does not implement key-based merge, do not assume override
+behavior. Follow the repository's existing `mergeData()` semantics.
+
 ## 8-Module Architecture
 
-The TestContext system is built from eight cooperating modules:
+Some repositories use a multi-module TestContext architecture:
 
 | Module | Purpose |
 | --- | --- |
@@ -157,9 +181,8 @@ The TestContext system is built from eight cooperating modules:
 | `AuthManager` | Firebase Auth user creation and token generation |
 | `DatabaseReader` | Database read operations with ID resolution |
 
-The `DatabaseAdapter` interface ensures the system works with any database
-(Firestore, PostgreSQL, MongoDB) by requiring only that adapters implement
-standard read/write operations.
+That architecture is a reference design, not a required shape. Simpler projects
+may keep merge, scenario building, selectors, and DB writes in fewer files.
 
 For the full implementation guide for building a TestContext from scratch,
 see `./examples/test-context-implementation.md`.

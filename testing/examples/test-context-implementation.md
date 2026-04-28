@@ -2,7 +2,94 @@
 
 This guide walks through building the 8-module TestContext system from scratch. Follow phases in order.
 
-**Prerequisites**: A completed data model document listing all entities, their fields, relationships, and foreign keys.
+---
+
+## Step 0: Data Model Discovery
+
+**Before writing any code**, you need a clear data model. The rest of this
+guide is template code — it cannot be filled in meaningfully until you know
+your entities, their fields, their foreign keys, and their dependency order.
+
+### Option A — The user provides a data model
+
+Ask the user directly:
+
+> "To build the TestContext I need your data model. Please share it — a schema
+> file, an ERD, a list of tables/collections, or even a rough description of
+> your entities and how they relate. If you have a `Data_Model.md`,
+> `schema.prisma`, `schema.ts`, migration files, or similar, paste or point me
+> to it."
+
+Accept any of the following as input:
+- A prose description of entities and relationships
+- A list of types or interfaces from the codebase
+- A Prisma schema, SQL DDL, or Mongoose/Firestore schema file
+- A markdown data model document
+- A rough diagram description
+
+### Option B — No data model exists; analyze the codebase
+
+If the user cannot provide one, analyze the codebase to infer it:
+
+1. Search for type definitions, interfaces, and schema files:
+   - `*.schema.ts`, `*.model.ts`, `*.entity.ts`
+   - `schema.prisma`, migration files (`*.sql`)
+   - Firestore collection references (`db.collection(...)`)
+   - Mongoose model definitions (`mongoose.model(...)`)
+   - TypeScript `type` / `interface` blocks that look like DB rows
+
+2. Look for existing test data to understand what shape data already takes:
+   - Existing `baseData` or `testData` objects in test files
+   - Existing generator functions in a `generators/` directory
+   - Existing fixtures or factories
+
+3. Synthesize and present a proposed data model to the user for confirmation
+   before proceeding. Do not generate code based on an unconfirmed inference.
+
+### What to extract from the data model
+
+Once you have the data model (from the user or inferred), extract:
+
+| What | Why |
+|---|---|
+| Entity names + primary key fields | Generator function signatures, `types.ts` |
+| All fields + types (required vs optional) | Generator defaults, partial types |
+| Foreign key relationships | `bulkAdd` dependency order, generator validation |
+| Composite-key entities | Index strategy, `mergeData` switch cases |
+| Nested entities (stored separately, embedded in parent) | Stitching logic in `Scenario.build()` |
+| Enum values | Generator defaults and type definitions |
+
+### Dependency order derivation
+
+From the foreign key map, derive insertion order:
+
+1. Entities with **no foreign keys** — insert first
+2. Entities whose FKs reference only group 1 — insert second
+3. Continue until all entities are placed
+4. **Composite-key / junction tables** — always last (all their references must exist)
+5. **Nested entities** that are stitched into a parent — generate before the parent
+
+Write out the derived order explicitly and confirm it with the user before
+starting Phase 4 (Generators). This order must be consistent across
+`Scenario.bulkAdd()`, `DatabaseAdapter.upsertGeneratedData()`, and
+`DatabaseAdapter.deleteGeneratedData()` (reversed).
+
+**Example output to share with user before proceeding**:
+
+```
+Proposed insertion order for your data model:
+
+1. Role, Label           (no FKs; nested into Community)
+2. Community             (no FKs; stitched from roles/labels)
+3. Person                (no FKs)
+4. Event                 (FK → Community)
+5. CommunityAdmin        (composite: personId + communityId)
+6. PersonEvent           (composite: personId + eventId)
+
+Does this look right? Any entities missing?
+```
+
+Only proceed to Phase 1 once the data model and dependency order are confirmed.
 
 ---
 
@@ -64,29 +151,13 @@ packages/test-tools/
 
 ---
 
-## Phase 1: Pre-Implementation Analysis
+## Phase 1: Project Setup
 
-Before writing any code, map your data model:
-
-1. List all entities and their primary keys
-2. Identify foreign keys and which entity they reference
-3. Identify composite-key entities (no single primary key — two FK fields together are unique)
-4. Identify nested entities (stored in their own collection but embedded in a parent in API responses)
-5. Determine dependency order:
-   - Entities with no FKs come first
-   - Entities referencing them come next
-   - Composite-key / relationship tables come last
-   - Nested entities come before their parent
-
-**Example order**:
-```
-1. Roles, Labels       (no FKs; nested into Community)
-2. Communities         (no FKs; stitched from roles/labels)
-3. Persons             (no FKs)
-4. Events              (FK → Community)
-5. CommunityAdmins     (composite: personId + communityId)
-6. Notes               (FK → Person)
-```
+At this point you have completed Step 0 — the data model is known and the
+dependency order is confirmed. Use those outputs to fill in every placeholder
+in the phases below. Every reference to `[entity]`, `entityId`, `parentId`,
+etc. in these templates should be replaced with your actual entity names and
+field names from the confirmed data model.
 
 ---
 
@@ -729,5 +800,5 @@ const members = selector.getChildrenByEntity('E1')
 - **Dependency order**: `bulkAdd()` and `upsertGeneratedData()` must process entities in the same order
 - **Reverse for delete**: `deleteGeneratedData()` deletes in reverse dependency order
 - **Composite key format**: Use `key1:key2` as the document ID for composite-key entities
-- **No shared shorthand IDs**: Never use the same shorthand ID in both `baseData` and `testData` — causes duplicate key violations in `mergeData`
+- **Merge semantics are explicit**: If `mergeData()` supports key-based override, reusing the same shorthand ID in `baseData` and `testData` replaces the matching entity. This is usually replace-by-key, not deep merge.
 - **Nested entities before parent**: Generate nested entities before stitching them into the parent in `Scenario.build()`

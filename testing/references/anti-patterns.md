@@ -13,7 +13,7 @@ test without reading the entire file. Call `setUp()` at the start of each test.
 ```typescript
 // Bad
 beforeEach(async () => {
-  await ctx.setupEnv(baseData, {})
+  await ctx.setupEnv({ baseData, testData: {} })
 })
 
 // Good
@@ -62,8 +62,8 @@ const mockService = UserService as jest.MockedClass<typeof UserService>
 mockService.prototype.findById.mockResolvedValue({ id: '123' })
 
 // Good
-const service = new UserService(ctx.db)
-const result = await service.findById(selector.getUser('U1').id)
+const service = createServiceUnderTest()
+const result = await service.findById(selector.getUser('U1')._id)
 ```
 
 ### No hardcoded database IDs
@@ -77,42 +77,56 @@ const user = await service.findById('550e8400-e29b-41d4-a716-446655440000')
 
 // Good
 const user = selector.getUser('U1')
-const result = await service.findById(user.id)
+const result = await service.findById(user._id)
 ```
 
-### No duplicate shorthand IDs in `setupEnv()`
+### No unsafe shorthand-ID overrides
 
-Using the same shorthand ID in both `baseData` and `testData` causes a
-duplicate key violation at database insertion time.
+Do not assume all repositories handle repeated shorthand IDs the same way.
+
+- If the repository supports merge-by-key, repeating the same shorthand ID in
+  `baseData` and `testData` is how you override a module default.
+- If it does not, repeating the same shorthand ID may create duplicate data or
+  insertion failures.
+- Override semantics are typically replace-by-key, not deep merge.
 
 ```typescript
-// Bad
-await ctx.setupEnv(
-  { users: [{ _id: 'U1', orgId: 'O1' }] },
-  { users: [{ _id: 'U1', email: 'custom@example.com' }] } // ← duplicate U1!
-)
-
-// Good
-await ctx.setupEnv(
-  { users: [{ _id: 'U1', orgId: 'O1' }] },
-  { users: [{ _id: 'U2', orgId: 'O1', email: 'custom@example.com' }] } // ← U2
-)
+// Safe override when merge-by-key is supported
+await ctx.setupEnv({
+  baseData: { users: [{ _id: 'U1', orgId: 'O1' }] },
+  testData: { users: [{ _id: 'U1', orgId: 'O1', email: 'custom@example.com' }] },
+})
 ```
 
-### No `TestContext.create()` in test files
+### No ad-hoc TestContext access pattern
 
-Test files never instantiate TestContext directly. Use the `ctx` fixture.
+Do not invent a new pattern for obtaining `TestContext`. Follow the
+repository's existing fixture or helper pattern.
 
-### No manual data cleanup
+### No per-test manual data cleanup
 
-Tests do not delete data they created. Global setup handles truncation.
+Tests do not delete data they created as part of normal setup. Environment
+reset or suite-level cleanup handles that responsibility.
 
 ### No test data pollution across tests
 
-Do not access data from `MODULE_BASE_DATA` shorthand IDs in a test that also
-defines those same IDs differently in `testData`.
+Do not rely on data created by another test. If you override module defaults,
+do it explicitly through the repository's merge semantics.
 
-## E2E / Playwright Specific
+## API E2E Specific
+
+### No direct handler or controller imports in API E2E tests
+
+If the test imports route handlers, controllers, or services and never talks to
+a consumer-visible HTTP endpoint, it is not API E2E.
+
+### No hidden boundary downgrade
+
+Helpers that talk to an in-process app can be useful, but classify them
+honestly. If the test is not targeting the started local server or public base
+URL, it belongs in integration tests instead of API E2E.
+
+## UI E2E / Playwright Specific
 
 ### No locators in spec files
 

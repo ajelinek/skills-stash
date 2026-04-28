@@ -1,0 +1,43 @@
+{
+  "skill_name": "react",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need a reusable React Input component for a TypeScript app that uses CSS Modules. Please create a single `Input.tsx` file with typed props, `forwardRef`, an optional `label`, an optional `errorMessage`, proper accessible wiring between label/input/error text, and support for native input props. Save only the file to the requested output folder.",
+      "expected_output": "A typed, accessible input primitive with ref forwarding, label association, and error-state ARIA wiring.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Create a React `ThemeToggle.tsx` component for a TypeScript app. It should persist a light/dark theme preference in `localStorage`, apply the active theme using `document.documentElement.dataset.theme`, initialize from saved preference or system preference, and expose an accessible button for toggling. Save only the file to the requested output folder.",
+      "expected_output": "A theme toggle component that initializes, persists, and applies theme state correctly.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a `SignupForm.test.tsx` file for the provided `SignupForm.tsx` component using React Testing Library. Test behavior the user can observe, prefer role or label queries, use `user-event` for interaction, and cover at least initial render, successful submit, pending state, and error rendering. Save only the test file to the requested output folder.",
+      "expected_output": "A React Testing Library test file that uses user-centric queries and verifies visible behavior across the main form states.",
+      "files": [
+        "SignupForm.tsx"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a `useFormManagement.ts` hook for a TypeScript React app. The hook should manage controlled form state, expose `state`, `isDirty`, `updateState`, `resetState`, `onChange`, and `onSubmit`, support dotted field paths for nested objects, and keep submit wiring generic so pages can pass service-backed submit functions. Save only the file to the requested output folder.",
+      "expected_output": "A typed shared form hook that supports nested field updates, dirty tracking, and service-backed submit flows without embedding presentation or API logic.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Create a `CreateCommunityPage.tsx` React component for a TypeScript app using CSS Modules and shared foundational components. The page should use a provided `useCreateCommunityService()` hook, a shared form hook, labeled inputs, service-provided validation errors, an accessible submit error, and a busy submit button. Keep the component presentation-focused and do not call repositories or fetch APIs directly. Save only the file to the requested output folder.",
+      "expected_output": "A thin page-shell component that composes foundation primitives and service-backed form state, keeps validation and async logic out of the JSX layer, and renders accessible error and busy states.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Create an `AuthFormShell.tsx` React component for a TypeScript app using CSS Modules and shared foundational components. It should provide a reusable page shell for login, registration, or verification flows with a title, optional description, accessible error message, children for form fields, a busy submit button, and optional footer content. Keep it reusable and presentation-focused. Save only the file to the requested output folder.",
+      "expected_output": "A reusable auth page shell that centralizes shared layout and accessible messaging while leaving field content and submit behavior composable.",
+      "files": []
+    }
+  ]
+}
