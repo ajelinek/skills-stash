@@ -1,0 +1,15 @@
+{
+  "firebase": {
+    "firestore": 8080,
+    "auth": 9099,
+    "storage": 9199,
+    "functions": 5001,
+    "hosting": 5000,
+    "hub": 4400,
+    "ui": 4000,
+    "database": 9000
+  },
+  "web": {
+    "ui": 3333
+  }
+}

@@ -1,0 +1,56 @@
+---
+import styles from './styles.module.css'
+import Header from '../../components/layout/Header/index.astro'
+import Footer from '../../components/layout/Footer/index.astro'
+
+interface Props {
+  title: string
+  description?: string
+  ogImage?: string
+  noIndex?: boolean
+}
+
+const {
+  title,
+  description = 'Default site description',
+  ogImage,
+  noIndex = false,
+} = Astro.props
+
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site)
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {noIndex && <meta name="robots" content="noindex" />}
+
+    {ogImage && (
+      <meta property="og:image" content={ogImage} />
+      <meta name="twitter:card" content="summary_large_image" />
+    )}
+
+    <title>{title}</title>
+
+    <!-- Global styles are imported once here -->
+    <link rel="stylesheet" href="/styles/global.css" />
+  </head>
+  <body class={styles.body}>
+    <!-- Skip link: first focusable element on every page -->
+    <a href="#main-content" class={styles.skipLink}>
+      Skip to main content
+    </a>
+
+    <Header />
+
+    <main id="main-content" class={styles.main} tabindex="-1">
+      <slot />
+    </main>
+
+    <Footer />
+  </body>
+</html>

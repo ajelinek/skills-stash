@@ -1,0 +1,43 @@
+/* BaseLayout/styles.module.css
+ *
+ * Layout-level styles for the root shell.
+ * All styles for this layout live here — not inside the Astro <style> block.
+ */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  background-color: var(--color-background-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-base);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-inline: var(--spacing-md);
+  padding-block: var(--spacing-lg);
+}
+
+/* Skip link — visually hidden until focused */
+.skipLink {
+  position: absolute;
+  inset-block-start: -100%;
+  inset-inline-start: var(--spacing-sm);
+  background-color: var(--color-background-page);
+  color: var(--color-text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  z-index: 9999;
+  text-decoration: none;
+}
+
+.skipLink:focus {
+  inset-block-start: var(--spacing-sm);
+}

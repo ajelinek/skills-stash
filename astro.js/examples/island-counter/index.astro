@@ -1,0 +1,18 @@
+---
+// Astro wrapper — static shell that mounts the SolidJS island.
+// The island hydrates when the component enters the viewport.
+import styles from './styles.module.css'
+import Counter from './Counter.tsx'
+
+interface Props {
+  label?: string
+  initialCount?: number
+}
+
+const { label = 'Count', initialCount = 0 } = Astro.props
+---
+
+<div class={styles.wrapper}>
+  <p class={styles.label}>{label}</p>
+  <Counter client:visible initialCount={initialCount} />
+</div>

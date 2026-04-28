@@ -1,0 +1,192 @@
+/*
+ * foundational-button.css
+ *
+ * CSS Modules for Button and IconButton foundation components.
+ *
+ * Pattern: one base class (.button or .iconButton) per element.
+ * Variant modifier (.secondary, .ghost, .danger) is the only case where
+ * two classes appear on the same element:
+ *
+ *   <button className={styles.button}>Primary</button>
+ *   <button className={`${styles.button} ${styles.secondary}`}>Secondary</button>
+ *
+ * All values come from CSS custom properties (tokens). No hard-coded colors,
+ * sizes, or spacing. No generic utility classes.
+ */
+
+/* ─── Button base ───────────────────────────────────────────────────────────── */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+
+  min-height: 44px;                          /* WCAG minimum touch target */
+  padding: var(--spacing-sm) var(--spacing-md);
+
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  background-color: var(--color-interactive-primary);
+  color: var(--color-text-inverse);
+
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+/* ─── Focus ─────────────────────────────────────────────────────────────────── */
+
+/*
+ * Use :focus-visible so the indicator appears on keyboard navigation
+ * but not on mouse click.
+ */
+.button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─── Hover ──────────────────────────────────────────────────────────────────── */
+
+.button:hover:not(:disabled) {
+  background-color: var(--color-interactive-primary-hover);
+}
+
+/* ─── Variant modifiers ──────────────────────────────────────────────────────── */
+
+/*
+ * Variants are the single allowed modifier class alongside .button.
+ * Usage: className={`${styles.button} ${styles.secondary}`}
+ */
+
+.secondary {
+  background-color: transparent;
+  border-color: var(--color-interactive-primary);
+  color: var(--color-interactive-primary);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--color-interactive-primary-subtle);
+}
+
+.ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--color-background-subtle);
+}
+
+.danger {
+  background-color: var(--color-status-error);
+  color: var(--color-text-inverse);
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--color-status-error-hover);
+}
+
+/* ─── Disabled / loading states ──────────────────────────────────────────────── */
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Size modifiers ─────────────────────────────────────────────────────────── */
+
+/*
+ * Size is the other permitted modifier class alongside .button.
+ * Usage: className={`${styles.button} ${styles.sm}`}
+ */
+
+.sm {
+  min-height: 36px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.lg {
+  min-height: 52px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-lg);
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   IconButton
+   Separate foundation component — always requires aria-label.
+   No visible text; icon provides the visual, aria-label provides the name.
+
+   Usage:
+     <button type="button" className={styles.iconButton} aria-label="Close dialog">
+       <Icon name="close" aria-hidden="true" size="md" />
+     </button>
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Square, minimum 44×44px touch target */
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--spacing-sm);
+
+  background-color: transparent;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+
+  color: var(--color-text-primary);         /* icon inherits via currentColor */
+
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.iconButton:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.iconButton:hover:not(:disabled) {
+  background-color: var(--color-background-subtle);
+  color: var(--color-interactive-primary);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Danger variant for IconButton — e.g., delete action */
+.iconButtonDanger {
+  color: var(--color-status-error);
+}
+
+.iconButtonDanger:hover:not(:disabled) {
+  background-color: var(--color-status-error-subtle);
+  color: var(--color-status-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconButton {
+    transition: none;
+  }
+}

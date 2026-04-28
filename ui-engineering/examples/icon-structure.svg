@@ -1,0 +1,51 @@
+<!--
+  ICON FILE TEMPLATE
+  components/foundation/icons/<semantic-name>.svg
+
+  RULES:
+  1. One icon per file.
+  2. File name is the icon's semantic meaning in kebab-case.
+     Good: close.svg, chevron-down.svg, warning-triangle.svg
+     Bad:  icon-x.svg, ico_close.svg, CloseIcon.svg
+  3. No hard-coded presentation attributes on the <svg> root.
+     Remove: fill, stroke, width, height, color
+  4. Always include viewBox so the icon scales via CSS.
+  5. Use currentColor on path fill/stroke — the CSS `color` property
+     controls icon color from outside the file.
+  6. Do NOT add <title> or <desc> — accessibility labeling is the
+     responsibility of the consuming Icon or IconButton component.
+  7. Do NOT inline this SVG markup in a component template.
+     Import it through the Icon or IconButton foundation component.
+-->
+
+<!--
+  CORRECT — close.svg
+  viewBox set, no width/height on root, currentColor on path.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path
+    d="M18 6L6 18M6 6l12 12"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
+
+<!--
+  INCORRECT — do not copy this block.
+  Every attribute below is a violation.
+
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"              ← hard-coded dimension; prevents CSS sizing
+    height="24"             ← hard-coded dimension; prevents CSS sizing
+    fill="#000000"          ← hard-coded color; breaks theming
+    stroke="black"          ← hard-coded color; breaks theming
+    color="currentColor"    ← wrong attribute; use fill/stroke on paths
+  >
+    <title>Close</title>    ← omit; Icon component handles accessible name
+    <desc>An X shape</desc> ← omit; Icon component handles accessible name
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+-->

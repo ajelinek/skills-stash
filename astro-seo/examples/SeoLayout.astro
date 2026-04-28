@@ -1,0 +1,131 @@
+---
+/**
+ * SeoLayout.astro
+ *
+ * Global SEO layout component. Wrap every page with this to produce consistent
+ * <head> metadata: title, canonical, Open Graph, Twitter Card, robots meta, and
+ * the html[lang] attribute.
+ *
+ * Usage:
+ *   <SeoLayout title="My Page" description="…">
+ *     <slot />
+ *   </SeoLayout>
+ *
+ * For article pages:
+ *   <SeoLayout
+ *     title="Post Title"
+ *     description="Post excerpt"
+ *     type="article"
+ *     publishedTime={frontmatter.pubDate.toISOString()}
+ *     ogImage="/images/post-cover.jpg"
+ *   >
+ *     <slot />
+ *   </SeoLayout>
+ *
+ * Staging / draft pages (no-index):
+ *   <SeoLayout title="Draft" description="…" noindex>
+ *     <slot />
+ *   </SeoLayout>
+ */
+
+interface Props {
+  /** Page <title>. Appended with site name when siteName is provided. */
+  title: string
+  /** Meta description. Keep under 160 characters. */
+  description: string
+  /**
+   * Canonical URL override. Defaults to Astro.url (current request URL).
+   * Use when the canonical differs from the URL the page is served at.
+   */
+  canonical?: URL | string
+  /** Open Graph / Twitter image. Absolute URL or site-root-relative path. */
+  ogImage?: string
+  /** Open Graph type. Defaults to "website". Use "article" for blog posts. */
+  type?: 'website' | 'article'
+  /** ISO 8601 publish date string. Only used when type is "article". */
+  publishedTime?: string
+  /** ISO 8601 modified date string. Only used when type is "article". */
+  modifiedTime?: string
+  /** Suppress indexing. Outputs <meta name="robots" content="noindex, nofollow">. */
+  noindex?: boolean
+  /** BCP 47 language tag for html[lang]. Defaults to "en". */
+  lang?: string
+  /** Site name appended to <title>. Defaults to Astro.site hostname when omitted. */
+  siteName?: string
+}
+
+const {
+  title,
+  description,
+  canonical: canonicalProp,
+  ogImage,
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  noindex = false,
+  lang = 'en',
+  siteName,
+} = Astro.props
+
+// Build canonical URL
+const canonical = canonicalProp
+  ? new URL(canonicalProp, Astro.site)
+  : Astro.url
+
+// Build the <title> tag value
+const resolvedSiteName =
+  siteName ?? (Astro.site ? new URL(Astro.site).hostname : undefined)
+const pageTitle = resolvedSiteName ? `${title} | ${resolvedSiteName}` : title
+
+// Resolve OG image to absolute URL
+const ogImageUrl = ogImage
+  ? new URL(ogImage, Astro.site).toString()
+  : undefined
+
+// Robots directive
+const robotsContent = noindex ? 'noindex, nofollow' : 'index, follow'
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Primary meta -->
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={robotsContent} />
+    <link rel="canonical" href={canonical.toString()} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonical.toString()} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    {resolvedSiteName && <meta property="og:site_name" content={resolvedSiteName} />}
+
+    <!-- Article-specific Open Graph -->
+    {type === 'article' && publishedTime && (
+      <meta property="article:published_time" content={publishedTime} />
+    )}
+    {type === 'article' && modifiedTime && (
+      <meta property="article:modified_time" content={modifiedTime} />
+    )}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+
+    <!-- Prevent layout shift from fonts by preloading critical font files here -->
+    <!-- Example: <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin /> -->
+
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

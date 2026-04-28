@@ -1,0 +1,184 @@
+---
+/**
+ * JsonLd.astro
+ *
+ * Renders JSON-LD structured data as an inline <script type="application/ld+json">.
+ * Supports four page types: website home, article, breadcrumbs, and FAQ.
+ *
+ * Usage — website home page (WebSite + WebPage):
+ *   <JsonLd type="website" name="My Site" description="…" />
+ *
+ * Usage — blog post (Article):
+ *   <JsonLd
+ *     type="article"
+ *     headline="Post Title"
+ *     description="Post excerpt"
+ *     datePublished={frontmatter.pubDate.toISOString()}
+ *     dateModified={frontmatter.updatedDate?.toISOString()}
+ *     image="/images/post-cover.jpg"
+ *     authorName="Jane Smith"
+ *     authorUrl="https://janedoe.com"
+ *   />
+ *
+ * Usage — breadcrumbs:
+ *   <JsonLd
+ *     type="breadcrumb"
+ *     items={[
+ *       { name: 'Home', url: '/' },
+ *       { name: 'Blog', url: '/blog/' },
+ *       { name: 'My Post', url: '/blog/my-post/' },
+ *     ]}
+ *   />
+ *
+ * Usage — FAQ page:
+ *   <JsonLd
+ *     type="faq"
+ *     questions={[
+ *       { question: 'What is this?', answer: 'It is a thing.' },
+ *       { question: 'How do I use it?', answer: 'Like this.' },
+ *     ]}
+ *   />
+ *
+ * Combine multiple types on the same page using @graph:
+ *   Place multiple <JsonLd /> components — each renders its own script tag.
+ *   Or use the raw `schema` prop to pass a fully custom object.
+ */
+
+type BreadcrumbItem = { name: string; url: string }
+type FaqItem = { question: string; answer: string }
+
+interface WebsiteProps {
+  type: 'website'
+  name: string
+  description: string
+  /** Absolute URL override. Defaults to Astro.site. */
+  url?: string
+  /** SearchAction potentialAction for sitelinks search box (optional). */
+  searchUrl?: string
+}
+
+interface ArticleProps {
+  type: 'article'
+  headline: string
+  description: string
+  datePublished: string
+  dateModified?: string
+  image?: string
+  authorName?: string
+  /** Absolute URL of the author's page or profile. */
+  authorUrl?: string
+  /** Absolute URL override. Defaults to Astro.url. */
+  url?: string
+}
+
+interface BreadcrumbProps {
+  type: 'breadcrumb'
+  items: BreadcrumbItem[]
+}
+
+interface FaqProps {
+  type: 'faq'
+  questions: FaqItem[]
+}
+
+interface RawProps {
+  /** Pass a fully custom schema object. All other props are ignored. */
+  schema: Record<string, unknown>
+}
+
+type Props =
+  | WebsiteProps
+  | ArticleProps
+  | BreadcrumbProps
+  | FaqProps
+  | RawProps
+
+const props = Astro.props
+
+function toAbsolute(path: string): string {
+  if (!path) return ''
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  return new URL(path, Astro.site).toString()
+}
+
+function buildSchema(): Record<string, unknown> {
+  if ('schema' in props) return props.schema
+
+  const siteUrl = Astro.site?.toString().replace(/\/$/, '') ?? ''
+  const pageUrl = Astro.url.toString()
+
+  if (props.type === 'website') {
+    const schema: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: props.name,
+      description: props.description,
+      url: props.url ?? siteUrl,
+    }
+    if (props.searchUrl) {
+      schema.potentialAction = {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: props.searchUrl },
+        'query-input': 'required name=search_term_string',
+      }
+    }
+    return schema
+  }
+
+  if (props.type === 'article') {
+    const schema: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: props.headline,
+      description: props.description,
+      url: props.url ?? pageUrl,
+      datePublished: props.datePublished,
+    }
+    if (props.dateModified) schema.dateModified = props.dateModified
+    if (props.image) schema.image = toAbsolute(props.image)
+    if (props.authorName) {
+      schema.author = {
+        '@type': 'Person',
+        name: props.authorName,
+        ...(props.authorUrl ? { url: props.authorUrl } : {}),
+      }
+    }
+    return schema
+  }
+
+  if (props.type === 'breadcrumb') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: props.items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: toAbsolute(item.url),
+      })),
+    }
+  }
+
+  if (props.type === 'faq') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: props.questions.map((q) => ({
+        '@type': 'Question',
+        name: q.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: q.answer,
+        },
+      })),
+    }
+  }
+
+  return {}
+}
+
+const schema = buildSchema()
+const json = JSON.stringify(schema)
+---
+
+<script type="application/ld+json" set:html={json} />

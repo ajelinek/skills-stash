@@ -1,0 +1,62 @@
+/* island-counter/styles.module.css
+ *
+ * One CSS Module file covers both the Astro wrapper and the SolidJS island.
+ * Both files import from the same styles.module.css — this is intentional.
+ *
+ * Never write styles inside the Astro <style> block or as inline styles.
+ */
+
+/* Used by index.astro */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Used by Counter.tsx */
+.counter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--spacing-xs);
+  background-color: var(--color-interactive-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.button:hover {
+  background-color: var(--color-interactive-primary-hover);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.output {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+  text-align: center;
+}

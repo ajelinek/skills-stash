@@ -1,0 +1,125 @@
+<!--
+  form-with-validation.html
+
+  Annotated semantic HTML form example demonstrating:
+  - Label association with generated IDs
+  - ARIA error messaging via aria-describedby and aria-invalid
+  - Fieldset + legend for grouped inputs
+  - Accessible submission state (disabled + loading)
+  - Role="alert" for inline validation errors
+
+  This is a structural reference, not a complete implementation.
+  Swap in your framework's rendering approach while preserving the
+  semantic HTML structure and ARIA attributes shown here.
+-->
+
+<form id="registration-form" novalidate>
+
+  <!-- ── Email field ──────────────────────────────────────────────────────── -->
+
+  <div class="field">
+    <label for="reg-email">Email address</label>
+
+    <input
+      id="reg-email"
+      type="email"
+      name="email"
+      autocomplete="email"
+      required
+      aria-required="true"
+      aria-invalid="true"
+      aria-describedby="reg-email-error"
+    />
+
+    <!--
+      role="alert" causes screen readers to announce this error immediately
+      when it appears in the DOM. Pair with aria-describedby on the input.
+    -->
+    <span id="reg-email-error" role="alert" class="error-message">
+      Enter a valid email address.
+    </span>
+  </div>
+
+  <!-- ── Password field ───────────────────────────────────────────────────── -->
+
+  <div class="field">
+    <label for="reg-password">Password</label>
+
+    <!--
+      aria-describedby can reference both hint text and an error message.
+      List IDs space-separated.
+    -->
+    <input
+      id="reg-password"
+      type="password"
+      name="password"
+      autocomplete="new-password"
+      required
+      aria-required="true"
+      aria-describedby="reg-password-hint reg-password-error"
+      aria-invalid="false"
+    />
+
+    <span id="reg-password-hint" class="field-hint">
+      At least 8 characters, including one number.
+    </span>
+
+    <!-- Hidden when no error. Set aria-invalid="true" and display when error is present. -->
+    <span id="reg-password-error" role="alert" class="error-message" hidden>
+      Password must be at least 8 characters.
+    </span>
+  </div>
+
+  <!-- ── Grouped checkboxes (fieldset + legend) ────────────────────────────── -->
+
+  <fieldset>
+    <legend>Communication preferences</legend>
+
+    <label class="checkbox-label">
+      <input type="checkbox" name="notify-email" value="email" />
+      Email updates
+    </label>
+
+    <label class="checkbox-label">
+      <input type="checkbox" name="notify-sms" value="sms" />
+      SMS updates
+    </label>
+  </fieldset>
+
+  <!-- ── Submit button ─────────────────────────────────────────────────────── -->
+
+  <!--
+    During submission:
+    - Add aria-busy="true" to the form or button region
+    - Disable the button (prevents duplicate submissions)
+    - Show a loading indicator with role="status" inside the button
+    - On completion, remove aria-busy and re-enable the button
+  -->
+  <div class="form-actions">
+    <button type="submit" id="reg-submit">
+      Create account
+    </button>
+
+    <!--
+      Submitting state — swap in when the form is submitting:
+
+      <button type="submit" id="reg-submit" disabled aria-disabled="true">
+        <span role="status" aria-label="Creating account…" class="spinner" aria-hidden="true"></span>
+        Creating account…
+      </button>
+    -->
+  </div>
+
+  <!-- ── Form-level network error (shown on failed submission) ─────────────── -->
+
+  <!--
+    Show this region when a server or network error occurs.
+    role="alert" announces it to screen readers when it becomes visible.
+    Keep hidden (display:none or hidden attribute) when no error is present.
+  -->
+  <div role="alert" class="form-error" hidden>
+    Something went wrong. Please try again. If the problem continues,
+    contact support.
+  </div>
+
+</form>
