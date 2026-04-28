@@ -1,5 +1,7 @@
 # Standalone Skills
 
+> **Note:** These skills are actively being tested and are still evolving. Expect changes to structure, content, and coverage as they mature.
+
 This directory contains opinionated, first-principles skills built for this project.
 They cover the technology areas where custom guidance adds the most value.
 
@@ -100,19 +102,19 @@ npx skills add firebase/agent-skills firebase-security-rules-auditor
 npx skills add firebase/agent-skills firebase-ai-logic-basics
 ```
 
-| Skill                                      | Why                                                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `firebase-basics`                          | Firebase project setup, config, and CLI workflow                                                       |
-| `firebase-auth-basics`                     | Firebase Authentication flows: email, OAuth, and token handling                                       |
-| `firebase-hosting-basics`                  | Firebase Hosting setup, deployment, and CDN configuration                                              |
-| `firebase-app-hosting-basics`              | Firebase App Hosting for server-rendered apps: build, deploy, and rollout patterns                    |
-| `firebase-data-connect`                    | PostgreSQL-backed GraphQL via Firebase SQL Connect — schema, queries, mutations, and type-safe SDKs   |
-| `firebase-firestore-standard`              | Firestore data modeling, queries, and security rules for standard projects                             |
-| `firebase-ai-logic`                        | Firebase AI Logic integration: Gemini API access, prompt management, and server-side AI workflows      |
-| `firebase-local-env-setup`                 | Local Firebase emulator suite setup and development workflow                                           |
-| `firebase-firestore-basics`                | Firestore fundamentals: reads, writes, and real-time listeners                                         |
-| `firebase-security-rules-auditor`          | Audits Firebase Security Rules for gaps, misconfigurations, and overly permissive access               |
-| `firebase-ai-logic-basics`                 | Introductory Firebase AI Logic patterns for getting started with Gemini-powered features               |
+| Skill                             | Why                                                                                                 |
+| --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `firebase-basics`                 | Firebase project setup, config, and CLI workflow                                                    |
+| `firebase-auth-basics`            | Firebase Authentication flows: email, OAuth, and token handling                                     |
+| `firebase-hosting-basics`         | Firebase Hosting setup, deployment, and CDN configuration                                           |
+| `firebase-app-hosting-basics`     | Firebase App Hosting for server-rendered apps: build, deploy, and rollout patterns                  |
+| `firebase-data-connect`           | PostgreSQL-backed GraphQL via Firebase SQL Connect — schema, queries, mutations, and type-safe SDKs |
+| `firebase-firestore-standard`     | Firestore data modeling, queries, and security rules for standard projects                          |
+| `firebase-ai-logic`               | Firebase AI Logic integration: Gemini API access, prompt management, and server-side AI workflows   |
+| `firebase-local-env-setup`        | Local Firebase emulator suite setup and development workflow                                        |
+| `firebase-firestore-basics`       | Firestore fundamentals: reads, writes, and real-time listeners                                      |
+| `firebase-security-rules-auditor` | Audits Firebase Security Rules for gaps, misconfigurations, and overly permissive access            |
+| `firebase-ai-logic-basics`        | Introductory Firebase AI Logic patterns for getting started with Gemini-powered features            |
 
 ### Apollo / GraphQL
 
@@ -131,13 +133,7 @@ npx skills add wshobson/agents sql-optimization-patterns
 npx skills add wshobson/agents database-migration
 ```
 
-| Skill                    | Why                                                              |
-| ------------------------ | ---------------------------------------------------------------- |
-| `sql-optimization-patterns` | Query tuning, index strategy, and EXPLAIN analysis           |
-| `database-migration`     | Schema migration workflows, versioning, and rollback patterns   |
-
-### GCP App Engine
-
-No GCP App Engine skill exists on skills.sh as of April 2026. No public catalog option
-is available — consider a local standalone skill in this directory if App Engine deployment
-patterns are needed for this project.
+| Skill                       | Why                                                           |
+| --------------------------- | ------------------------------------------------------------- |
+| `sql-optimization-patterns` | Query tuning, index strategy, and EXPLAIN analysis            |
+| `database-migration`        | Schema migration workflows, versioning, and rollback patterns |
