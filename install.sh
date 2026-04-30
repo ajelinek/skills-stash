@@ -53,7 +53,7 @@ echo ""
   echo "  2) Recommended public skills only"
   echo "  3) All (ajelinek/skills-stash + recommended public skills)"
 echo ""
-read -rp "Choose an option [1-3]: " choice
+read -rp "Choose an option [1-3]: " choice < /dev/tty
 
 case "$choice" in
   1)
