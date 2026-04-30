@@ -11,28 +11,38 @@ For everything else, install from the public catalog at [skills.sh](https://skil
 
 ## Quick install
 
-Run this one-liner to launch the interactive installer without cloning the repo:
+Run this one-liner to install everything automatically — no prompts, no interaction required:
 
 ```sh
 bash <(curl -fsSL https://raw.githubusercontent.com/ajelinek/skills-stash/main/install.sh)
 ```
 
+This installs **all skills** from `ajelinek/skills-stash` plus the recommended public skills listed below. Nothing is selected or confirmed — it runs straight through.
+
 ---
 
-## Skills in this directory
+## Manual install
 
-Install all skills at once:
+To interactively pick and choose skills from a repo, run `npx skills add <repo>` — it will present a multi-select list of everything available. To install a specific skill directly without prompts, append the skill name and `--yes`.
+
+---
+
+### `ajelinek/skills-stash`
 
 ```sh
-npx skills add ajelinek/skills-stash typescript-engineering
-npx skills add ajelinek/skills-stash testing
-npx skills add ajelinek/skills-stash react
-npx skills add ajelinek/skills-stash solid.js
-npx skills add ajelinek/skills-stash astro.js
-npx skills add ajelinek/skills-stash ui-engineering
-npx skills add ajelinek/skills-stash astro-seo
-npx skills add ajelinek/skills-stash cmux-workspace-builder
-npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
+# Interactive — pick what you want
+npx skills add ajelinek/skills-stash
+
+# Or install specific skills directly
+npx skills add ajelinek/skills-stash typescript-engineering --yes
+npx skills add ajelinek/skills-stash testing --yes
+npx skills add ajelinek/skills-stash react --yes
+npx skills add ajelinek/skills-stash solid.js --yes
+npx skills add ajelinek/skills-stash astro.js --yes
+npx skills add ajelinek/skills-stash ui-engineering --yes
+npx skills add ajelinek/skills-stash astro-seo --yes
+npx skills add ajelinek/skills-stash cmux-workspace-builder --yes
+npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup --yes
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -49,86 +59,93 @@ npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 
 ---
 
-## Recommended public skills
+### `wshobson/agents`
 
-Install these from [skills.sh](https://skills.sh) to complement the skills above.
-
-### TypeScript and backend
+A large public catalog (150+ skills). The ones recommended here complement the skills above.
 
 ```sh
-npx skills add wshobson/agents typescript-advanced-types
-npx skills add wshobson/agents nodejs-backend-patterns
-npx skills add wshobson/agents api-design-principles
-npx skills add wshobson/agents auth-implementation-patterns
+# Interactive — pick what you want from the full catalog
+npx skills add wshobson/agents
+
+# Or install specific skills directly
+npx skills add wshobson/agents typescript-advanced-types --yes
+npx skills add wshobson/agents nodejs-backend-patterns --yes
+npx skills add wshobson/agents api-design-principles --yes
+npx skills add wshobson/agents auth-implementation-patterns --yes
+npx skills add wshobson/agents postgresql-table-design --yes
+npx skills add wshobson/agents e2e-testing-patterns --yes
+npx skills add wshobson/agents sql-optimization-patterns --yes
+npx skills add wshobson/agents database-migration --yes
 ```
 
-| Skill                          | Why                                                                                |
+| Skill                          | What it does                                                                       |
 | ------------------------------ | ---------------------------------------------------------------------------------- |
 | `typescript-advanced-types`    | Advanced type patterns that extend `typescript-engineering` without duplicating it |
 | `nodejs-backend-patterns`      | Express, NestJS, and Fastify service layer patterns                                |
 | `api-design-principles`        | REST API design conventions, versioning, and error response shaping                |
 | `auth-implementation-patterns` | Auth flows, JWT, session handling, and OAuth patterns                              |
+| `postgresql-table-design`      | PostgreSQL-specific table and index design guidance                                |
+| `e2e-testing-patterns`         | Additional E2E test organization and flakiness-reduction patterns                  |
+| `sql-optimization-patterns`    | Query tuning, index strategy, and EXPLAIN analysis                                 |
+| `database-migration`           | Schema migration workflows, versioning, and rollback patterns                      |
 
-### Database and data
+---
 
-```sh
-npx skills add neondatabase/agent-skills neon-postgres
-npx skills add wshobson/agents postgresql-table-design
-```
-
-| Skill                     | Why                                                     |
-| ------------------------- | ------------------------------------------------------- |
-| `neon-postgres`           | Neon serverless PostgreSQL setup and branching workflow |
-| `postgresql-table-design` | PostgreSQL-specific table and index design guidance     |
-
-### Testing
+### `currents-dev/playwright-best-practices-skill`
 
 ```sh
-npx skills add currents-dev/playwright-best-practices-skill playwright-best-practices
-npx skills add wshobson/agents e2e-testing-patterns
+# Interactive
+npx skills add currents-dev/playwright-best-practices-skill
+
+# Or install directly
+npx skills add currents-dev/playwright-best-practices-skill playwright-best-practices --yes
 ```
 
-| Skill                       | Why                                                               |
-| --------------------------- | ----------------------------------------------------------------- |
-| `playwright-best-practices` | Playwright-specific patterns that complement the `testing` skill  |
-| `e2e-testing-patterns`      | Additional E2E test organization and flakiness-reduction patterns |
+| Skill                       | What it does                                                              |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `playwright-best-practices` | Playwright-specific patterns that complement the `testing` skill          |
 
-### SEO and marketing
+---
+
+### `coreyhaines31/marketingskills`
 
 ```sh
-npx skills add coreyhaines31/marketingskills seo-audit
-npx skills add coreyhaines31/marketingskills ai-seo
+# Interactive
+npx skills add coreyhaines31/marketingskills
+
+# Or install directly
+npx skills add coreyhaines31/marketingskills seo-audit --yes
+npx skills add coreyhaines31/marketingskills ai-seo --yes
 ```
 
-| Skill       | Why                                                                    |
+| Skill       | What it does                                                           |
 | ----------- | ---------------------------------------------------------------------- |
 | `seo-audit` | Complements `astro-seo` with audit-oriented SEO analysis and reporting |
 | `ai-seo`    | AI-assisted SEO content and programmatic SEO patterns                  |
 
 ---
 
-## What is not covered here
-
-Firebase, PostgreSQL operational patterns, and Apollo/GraphQL are intentionally out of scope
-for this skill library. Use public skills from Firebase or Neon if your project needs them.
-
-### Firebase
+### `firebase/agent-skills`
 
 ```sh
-npx skills add firebase/agent-skills firebase-basics
-npx skills add firebase/agent-skills firebase-auth-basics
-npx skills add firebase/agent-skills firebase-hosting-basics
-npx skills add firebase/agent-skills firebase-app-hosting-basics
-npx skills add firebase/agent-skills firebase-data-connect
-npx skills add firebase/agent-skills firebase-firestore-standard
-npx skills add firebase/agent-skills firebase-ai-logic
-npx skills add firebase/agent-skills firebase-local-env-setup
-npx skills add firebase/agent-skills firebase-firestore-basics
-npx skills add firebase/agent-skills firebase-security-rules-auditor
-npx skills add firebase/agent-skills firebase-ai-logic-basics
+# Interactive — recommended, this catalog is large
+npx skills add firebase/agent-skills
+
+# Or install specific skills directly
+npx skills add firebase/agent-skills firebase-basics --yes
+npx skills add firebase/agent-skills firebase-auth-basics --yes
+npx skills add firebase/agent-skills firebase-hosting-basics --yes
+npx skills add firebase/agent-skills firebase-app-hosting-basics --yes
+npx skills add firebase/agent-skills firebase-data-connect --yes
+npx skills add firebase/agent-skills firebase-firestore-standard --yes
+npx skills add firebase/agent-skills firebase-ai-logic --yes
+npx skills add firebase/agent-skills firebase-local-env-setup --yes
+npx skills add firebase/agent-skills firebase-firestore-basics --yes
+npx skills add firebase/agent-skills firebase-security-rules-auditor --yes
+npx skills add firebase/agent-skills firebase-ai-logic-basics --yes
 ```
 
-| Skill                             | Why                                                                                                 |
+| Skill                             | What it does                                                                                        |
 | --------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `firebase-basics`                 | Firebase project setup, config, and CLI workflow                                                    |
 | `firebase-auth-basics`            | Firebase Authentication flows: email, OAuth, and token handling                                     |
@@ -141,25 +158,3 @@ npx skills add firebase/agent-skills firebase-ai-logic-basics
 | `firebase-firestore-basics`       | Firestore fundamentals: reads, writes, and real-time listeners                                      |
 | `firebase-security-rules-auditor` | Audits Firebase Security Rules for gaps, misconfigurations, and overly permissive access            |
 | `firebase-ai-logic-basics`        | Introductory Firebase AI Logic patterns for getting started with Gemini-powered features            |
-
-### Apollo / GraphQL
-
-No dedicated Apollo or GraphQL skill currently exists on skills.sh. `firebase-data-connect`
-above covers a GraphQL schema-first workflow if you are using Firebase SQL Connect.
-For standalone Apollo Server or Apollo Client work, no public catalog option is available —
-consider a local standalone skill in this directory.
-
-### PostgreSQL (additional patterns)
-
-The `neon-postgres` and `postgresql-table-design` skills above cover schema design.
-For operational and migration patterns:
-
-```sh
-npx skills add wshobson/agents sql-optimization-patterns
-npx skills add wshobson/agents database-migration
-```
-
-| Skill                       | Why                                                           |
-| --------------------------- | ------------------------------------------------------------- |
-| `sql-optimization-patterns` | Query tuning, index strategy, and EXPLAIN analysis            |
-| `database-migration`        | Schema migration workflows, versioning, and rollback patterns |
