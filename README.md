@@ -9,21 +9,9 @@ For everything else, install from the public catalog at [skills.sh](https://skil
 
 ---
 
-## Quick install
+## Install
 
-Run this one-liner to install everything automatically — no prompts, no interaction required:
-
-```sh
-bash <(curl -fsSL https://raw.githubusercontent.com/ajelinek/skills-stash/main/install.sh)
-```
-
-This installs **all skills** from `ajelinek/skills-stash` plus the recommended public skills listed below. Nothing is selected or confirmed — it runs straight through.
-
----
-
-## Manual install
-
-To interactively pick and choose skills from a repo, run `npx skills add <repo>` — it will present a multi-select list of everything available. To install a specific skill directly without prompts, append the skill name and `--yes`.
+To interactively pick and choose skills from a repo, run `npx skills add <repo>` — it will present a multi-select list of everything available. To install a single specific skill, append the skill name.
 
 ---
 
@@ -34,15 +22,15 @@ To interactively pick and choose skills from a repo, run `npx skills add <repo>`
 npx skills add ajelinek/skills-stash
 
 # Or install specific skills directly
-npx skills add ajelinek/skills-stash typescript-engineering --yes
-npx skills add ajelinek/skills-stash testing --yes
-npx skills add ajelinek/skills-stash react --yes
-npx skills add ajelinek/skills-stash solid.js --yes
-npx skills add ajelinek/skills-stash astro.js --yes
-npx skills add ajelinek/skills-stash ui-engineering --yes
-npx skills add ajelinek/skills-stash astro-seo --yes
-npx skills add ajelinek/skills-stash cmux-workspace-builder --yes
-npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup --yes
+npx skills add ajelinek/skills-stash typescript-engineering
+npx skills add ajelinek/skills-stash testing
+npx skills add ajelinek/skills-stash react
+npx skills add ajelinek/skills-stash solid.js
+npx skills add ajelinek/skills-stash astro.js
+npx skills add ajelinek/skills-stash ui-engineering
+npx skills add ajelinek/skills-stash astro-seo
+npx skills add ajelinek/skills-stash cmux-workspace-builder
+npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -68,42 +56,20 @@ A large public catalog (150+ skills). The ones recommended here complement the s
 npx skills add wshobson/agents
 
 # Or install specific skills directly
-npx skills add wshobson/agents typescript-advanced-types --yes
-npx skills add wshobson/agents nodejs-backend-patterns --yes
-npx skills add wshobson/agents api-design-principles --yes
-npx skills add wshobson/agents auth-implementation-patterns --yes
-npx skills add wshobson/agents postgresql-table-design --yes
-npx skills add wshobson/agents e2e-testing-patterns --yes
-npx skills add wshobson/agents sql-optimization-patterns --yes
-npx skills add wshobson/agents database-migration --yes
+npx skills add wshobson/agents nodejs-backend-patterns
+npx skills add wshobson/agents auth-implementation-patterns
+npx skills add wshobson/agents postgresql-table-design
+npx skills add wshobson/agents sql-optimization-patterns
+npx skills add wshobson/agents database-migration
 ```
 
-| Skill                          | What it does                                                                       |
-| ------------------------------ | ---------------------------------------------------------------------------------- |
-| `typescript-advanced-types`    | Advanced type patterns that extend `typescript-engineering` without duplicating it |
-| `nodejs-backend-patterns`      | Express, NestJS, and Fastify service layer patterns                                |
-| `api-design-principles`        | REST API design conventions, versioning, and error response shaping                |
-| `auth-implementation-patterns` | Auth flows, JWT, session handling, and OAuth patterns                              |
-| `postgresql-table-design`      | PostgreSQL-specific table and index design guidance                                |
-| `e2e-testing-patterns`         | Additional E2E test organization and flakiness-reduction patterns                  |
-| `sql-optimization-patterns`    | Query tuning, index strategy, and EXPLAIN analysis                                 |
-| `database-migration`           | Schema migration workflows, versioning, and rollback patterns                      |
-
----
-
-### `currents-dev/playwright-best-practices-skill`
-
-```sh
-# Interactive
-npx skills add currents-dev/playwright-best-practices-skill
-
-# Or install directly
-npx skills add currents-dev/playwright-best-practices-skill playwright-best-practices --yes
-```
-
-| Skill                       | What it does                                                              |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `playwright-best-practices` | Playwright-specific patterns that complement the `testing` skill          |
+| Skill                          | What it does                                                        |
+| ------------------------------ | ------------------------------------------------------------------- |
+| `nodejs-backend-patterns`      | Express, NestJS, and Fastify service layer patterns                 |
+| `auth-implementation-patterns` | Auth flows, JWT, session handling, and OAuth patterns               |
+| `postgresql-table-design`      | PostgreSQL-specific table and index design guidance                 |
+| `sql-optimization-patterns`    | Query tuning, index strategy, and EXPLAIN analysis                  |
+| `database-migration`           | Schema migration workflows, versioning, and rollback patterns       |
 
 ---
 
@@ -114,8 +80,8 @@ npx skills add currents-dev/playwright-best-practices-skill playwright-best-prac
 npx skills add coreyhaines31/marketingskills
 
 # Or install directly
-npx skills add coreyhaines31/marketingskills seo-audit --yes
-npx skills add coreyhaines31/marketingskills ai-seo --yes
+npx skills add coreyhaines31/marketingskills seo-audit
+npx skills add coreyhaines31/marketingskills ai-seo
 ```
 
 | Skill       | What it does                                                           |
@@ -132,17 +98,17 @@ npx skills add coreyhaines31/marketingskills ai-seo --yes
 npx skills add firebase/agent-skills
 
 # Or install specific skills directly
-npx skills add firebase/agent-skills firebase-basics --yes
-npx skills add firebase/agent-skills firebase-auth-basics --yes
-npx skills add firebase/agent-skills firebase-hosting-basics --yes
-npx skills add firebase/agent-skills firebase-app-hosting-basics --yes
-npx skills add firebase/agent-skills firebase-data-connect --yes
-npx skills add firebase/agent-skills firebase-firestore-standard --yes
-npx skills add firebase/agent-skills firebase-ai-logic --yes
-npx skills add firebase/agent-skills firebase-local-env-setup --yes
-npx skills add firebase/agent-skills firebase-firestore-basics --yes
-npx skills add firebase/agent-skills firebase-security-rules-auditor --yes
-npx skills add firebase/agent-skills firebase-ai-logic-basics --yes
+npx skills add firebase/agent-skills firebase-basics
+npx skills add firebase/agent-skills firebase-auth-basics
+npx skills add firebase/agent-skills firebase-hosting-basics
+npx skills add firebase/agent-skills firebase-app-hosting-basics
+npx skills add firebase/agent-skills firebase-data-connect
+npx skills add firebase/agent-skills firebase-firestore-standard
+npx skills add firebase/agent-skills firebase-ai-logic
+npx skills add firebase/agent-skills firebase-local-env-setup
+npx skills add firebase/agent-skills firebase-firestore-basics
+npx skills add firebase/agent-skills firebase-security-rules-auditor
+npx skills add firebase/agent-skills firebase-ai-logic-basics
 ```
 
 | Skill                             | What it does                                                                                        |
@@ -158,3 +124,35 @@ npx skills add firebase/agent-skills firebase-ai-logic-basics --yes
 | `firebase-firestore-basics`       | Firestore fundamentals: reads, writes, and real-time listeners                                      |
 | `firebase-security-rules-auditor` | Audits Firebase Security Rules for gaps, misconfigurations, and overly permissive access            |
 | `firebase-ai-logic-basics`        | Introductory Firebase AI Logic patterns for getting started with Gemini-powered features            |
+
+---
+
+## Not really coding, but nice to have
+
+### `anthropics/skills`
+
+Skills from Anthropic for document creation, file formats, and agent tooling.
+
+```sh
+# Interactive
+npx skills add anthropics/skills
+
+# Or install specific skills directly
+npx skills add anthropics/skills skill-creator
+npx skills add anthropics/skills pdf
+npx skills add anthropics/skills pptx
+npx skills add anthropics/skills xlsx
+npx skills add anthropics/skills docx
+npx skills add anthropics/skills mcp-builder
+npx skills add anthropics/skills doc-coauthoring
+```
+
+| Skill             | What it does                                                                                    |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `skill-creator`   | Create, test, and iteratively improve agent skills with structured evaluation and benchmarking  |
+| `pdf`             | Read, extract, merge, split, rotate, watermark, fill, encrypt, and OCR PDF files               |
+| `pptx`            | Create, read, edit, and manipulate PowerPoint presentations                                     |
+| `xlsx`            | Open, read, edit, create, and convert spreadsheet files                                         |
+| `docx`            | Create, read, edit, and manipulate Word documents                                               |
+| `mcp-builder`     | Build high-quality MCP servers connecting LLMs to external services, with evals                 |
+| `doc-coauthoring` | Structured three-stage workflow for collaboratively authoring docs, specs, and proposals        |
