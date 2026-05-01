@@ -17,11 +17,15 @@ To interactively pick and choose skills from a repo, run `npx skills add <repo>`
 
 ### `ajelinek/skills-stash`
 
-```sh
-# Interactive — pick what you want
-npx skills add ajelinek/skills-stash
+Interactive - pick what you want:
 
-# Or install specific skills directly
+```sh
+npx skills add ajelinek/skills-stash
+```
+
+Install specific skills directly:
+
+```sh
 npx skills add ajelinek/skills-stash typescript-engineering
 npx skills add ajelinek/skills-stash testing
 npx skills add ajelinek/skills-stash react
@@ -51,11 +55,15 @@ npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 
 A large public catalog (150+ skills). The ones recommended here complement the skills above.
 
-```sh
-# Interactive — pick what you want from the full catalog
-npx skills add wshobson/agents
+Interactive - pick what you want from the full catalog:
 
-# Or install specific skills directly
+```sh
+npx skills add wshobson/agents
+```
+
+Install specific skills directly:
+
+```sh
 npx skills add wshobson/agents nodejs-backend-patterns
 npx skills add wshobson/agents auth-implementation-patterns
 npx skills add wshobson/agents postgresql-table-design
@@ -75,11 +83,15 @@ npx skills add wshobson/agents database-migration
 
 ### `coreyhaines31/marketingskills`
 
-```sh
-# Interactive
-npx skills add coreyhaines31/marketingskills
+Interactive:
 
-# Or install directly
+```sh
+npx skills add coreyhaines31/marketingskills
+```
+
+Install directly:
+
+```sh
 npx skills add coreyhaines31/marketingskills seo-audit
 npx skills add coreyhaines31/marketingskills ai-seo
 ```
@@ -93,11 +105,15 @@ npx skills add coreyhaines31/marketingskills ai-seo
 
 ### `firebase/agent-skills`
 
-```sh
-# Interactive — recommended, this catalog is large
-npx skills add firebase/agent-skills
+Interactive - recommended, this catalog is large:
 
-# Or install specific skills directly
+```sh
+npx skills add firebase/agent-skills
+```
+
+Install specific skills directly:
+
+```sh
 npx skills add firebase/agent-skills firebase-basics
 npx skills add firebase/agent-skills firebase-auth-basics
 npx skills add firebase/agent-skills firebase-hosting-basics
@@ -133,11 +149,15 @@ npx skills add firebase/agent-skills firebase-ai-logic-basics
 
 Skills from Anthropic for document creation, file formats, and agent tooling.
 
-```sh
-# Interactive
-npx skills add anthropics/skills
+Interactive:
 
-# Or install specific skills directly
+```sh
+npx skills add anthropics/skills
+```
+
+Install specific skills directly:
+
+```sh
 npx skills add anthropics/skills skill-creator
 npx skills add anthropics/skills pdf
 npx skills add anthropics/skills pptx
