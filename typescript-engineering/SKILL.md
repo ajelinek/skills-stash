@@ -40,8 +40,11 @@ bloat.
 
 - Prefer `unknown` over `any` at boundaries, then narrow explicitly.
 - Use the simplest type construct that fits the problem.
-- All types belong in a top-level `types/` folder. Do not co-locate types inside
-  domain modules, feature folders, or subfolders. Import from `types/`.
+- Place types in a `types/` folder inside the owning boundary.
+- Use feature-level, shared-level, or app-level `types/` folders for boundary
+  owned types.
+- Use the root global `types/` folder only for types that are truly
+  cross-boundary and reused across the application.
 - Prefer `type` for new modeling work. Use `interface` only when you specifically
   need interface behavior such as declaration merging or class implementation
   patterns already established in the codebase.
@@ -104,7 +107,8 @@ references.
 ## Quality Bar
 
 - The change follows the existing architecture or intentionally improves it.
-- All types are in the `types/` folder, not scattered across domain modules.
+- Types live in the owning boundary's `types/` folder, or in the global
+  `types/` folder when they are genuinely shared across boundaries.
 - Types make important invariants clearer instead of adding ceremony.
 - Narrowing does the real safety work instead of broad assertions.
 - Naming and exports are consistent across the codebase.
