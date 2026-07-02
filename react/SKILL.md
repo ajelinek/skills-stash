@@ -5,7 +5,9 @@ description: >
   follow this repo's React conventions: CSS Modules, foundational components,
   service-driven state and validation, shared form hooks, SWR service modules,
   Zustand service hooks, route and auth composition, and accessible semantic
-  HTML.
+  HTML. Use alongside `ui-engineering` whenever the task also involves shared
+  UI structure, styling, semantics, accessibility, or foundation-component
+  decisions.
   Trigger on requests to build a React component, hook, foundational UI
   primitive, theme toggle, SWR service, or Zustand store or service that should
   match this coding style rather than generic React advice.

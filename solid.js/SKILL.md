@@ -4,7 +4,9 @@ description: >
   Use this skill when writing or refactoring SolidJS TypeScript code following
   structured conventions: CSS Modules, foundational component system, service-driven
   state and validation, shared form hooks, native SolidJS store state management,
-  and accessible semantic HTML.
+  and accessible semantic HTML. Use alongside `ui-engineering` whenever the
+  task also involves shared UI structure, styling, semantics, accessibility, or
+  foundation-component decisions.
   Trigger on requests to build a SolidJS component, hook, foundational UI primitive,
   async operation, store service, or subscription hook where architectural consistency
   matters more than generic SolidJS patterns.

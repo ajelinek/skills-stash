@@ -1,11 +1,14 @@
 ---
 name: ui-engineering
 description: >
-  Use this skill when writing UI components, designing component systems, or
-  applying shared front-end standards that apply across frameworks. Trigger on
-  requests about component structure, foundation components, accessibility, form
-  UX, CSS token architecture, semantic HTML, theming, or project directory
-  layout for any TypeScript UI codebase — whether React, Solid, or Astro.
+  Use this skill for most TypeScript frontend work that touches shared UI
+  structure, markup, styling, accessibility, or interaction patterns across
+  frameworks. Trigger on requests to build or refactor components, pages,
+  layouts, forms, design systems, shared or foundation components, CSS Modules,
+  responsive UI, theming, design tokens, semantic HTML, accessibility, or UI
+  project structure in React, Solid, Astro, or mixed frontend codebases. Load
+  this proactively for frontend implementation work unless the task is purely
+  framework-internal or purely non-UI TypeScript logic.
 ---
 
 # UI Engineering
@@ -13,6 +16,10 @@ description: >
 Shared front-end standards for component design, accessibility, styling, and
 form UX that apply across frameworks. Use this skill to set the baseline before
 reaching for a framework-specific skill.
+
+Load this before or alongside framework-specific UI skills such as `react`,
+`solid.js`, or `astro.js` whenever the task includes shared UI structure,
+styling, semantics, accessibility, or foundation-component decisions.
 
 This is the canonical home for shared frontend code-organization rules. Apply
 these boundary and import conventions first, then layer framework-specific React,

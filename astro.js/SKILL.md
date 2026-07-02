@@ -5,6 +5,9 @@ description: >
   static pages and layouts, SolidJS or React islands for all interactivity, CSS
   Modules in separate files, hydration directives, content collections, server
   islands, on-demand rendering, Astro Actions, and accessible semantic HTML.
+  Use alongside `ui-engineering` whenever the task also involves shared UI
+  structure, styling, semantics, accessibility, or foundation-component
+  decisions.
   Trigger on requests to build an Astro page, layout, island, action, or
   server-rendered feature.
 ---
