@@ -62,8 +62,10 @@ def parse_when(value: str) -> datetime:
     text = value.strip()
     low = text.lower()
 
-    if low in ("now", "today"):
+    if low == "now":
         return datetime.now().astimezone()
+    if low == "today":
+        return datetime.now().astimezone().replace(hour=0, minute=0, second=0, microsecond=0)
     if low == "yesterday":
         return (datetime.now().astimezone() - timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0
@@ -86,6 +88,25 @@ def parse_when(value: str) -> datetime:
         ) from exc
     if dt.tzinfo is None:
         dt = dt.astimezone()
+    return dt
+
+
+def _is_bare_day(value: str) -> bool:
+    """True for date args that name a whole calendar day rather than an instant:
+    'today', 'yesterday', or a bare ISO date with no time component."""
+    low = value.strip().lower()
+    if low in ("today", "yesterday"):
+        return True
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value.strip()))
+
+
+def until_boundary(value: str) -> datetime:
+    """Parse an --until argument, extending whole-day values to the end of that day
+    so `--until 2026-06-30` includes all of June 30th instead of stopping at its
+    midnight (parse_when's normal return for a bare day)."""
+    dt = parse_when(value)
+    if _is_bare_day(value):
+        dt = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
     return dt
 
 
@@ -151,10 +172,14 @@ def _find_text_marker(blob: bytes) -> int:
             if 0 < length < 100_000 and data_offset + length <= len(blob):
                 candidate = blob[data_offset : data_offset + length]
                 try:
-                    candidate.decode("utf-8")
+                    decoded = candidate.decode("utf-8")
                 except UnicodeDecodeError:
                     continue
-                if re.search(rb"[\x20-\x7e]", candidate) and not re.search(rb"[\x00-\x08]", candidate):
+                # Any printable Unicode character counts here, not just ASCII —
+                # a candidate.isprintable() check (rather than a \x20-\x7e byte-range
+                # check) so messages written entirely in non-Latin scripts (Chinese,
+                # Japanese, Korean, Cyrillic, Arabic, ...) still pass this heuristic.
+                if any(ch.isprintable() for ch in decoded) and not re.search(r"[\x00-\x08]", decoded):
                     return i - 1
     return -1
 
@@ -244,7 +269,7 @@ def _row_message_dict(
         handle = _handle_id_to_address(conn, row["handle_id"])
 
     text = resolve_message_text(row["text"], row["attributedBody"])
-    sender_name = "Me" if row["is_from_me"] else handle_names.get(handle or "", handle)
+    sender_name = "Me" if row["is_from_me"] else (resolve_handle_to_name(handle_names, handle) or handle)
 
     rowid = row["rowid"]
     attachment_paths = attachments_by_message.get(rowid, [])
@@ -305,7 +330,7 @@ def _chat_participants(conn: sqlite3.Connection, chat_rowid: int, names: dict[st
         """,
         (chat_rowid,),
     ).fetchall()
-    return [{"handle": r["id"], "name": names.get(r["id"], r["id"])} for r in rows]
+    return [{"handle": r["id"], "name": resolve_handle_to_name(names, r["id"]) or r["id"]} for r in rows]
 
 
 def _chat_stats(conn: sqlite3.Connection, chat_rowid: int) -> tuple[Optional[int], int]:
@@ -509,23 +534,26 @@ def cmd_chats(args: argparse.Namespace) -> dict[str, Any]:
     if args.since:
         where.append("last_message_date >= ?")
         params.append(dt_to_apple_ns(parse_when(args.since)))
+    where_sql = " AND ".join(where)
 
+    # Wrapped in an outer SELECT so the WHERE clause can filter on the computed
+    # last_message_date/message_count aliases (SQLite won't resolve SELECT-list
+    # aliases in a WHERE clause at the same query level).
     query = f"""
-        SELECT
-          c.ROWID as rowid, c.guid as guid, c.display_name as display_name,
-          (SELECT MAX(m.date) FROM message m
-             JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
-             WHERE cmj.chat_id = c.ROWID) as last_message_date,
-          (SELECT COUNT(*) FROM message m
-             JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
-             WHERE cmj.chat_id = c.ROWID AND {REACTION_FILTER_SQL}) as message_count
-        FROM chat c
+        SELECT * FROM (
+            SELECT
+              c.ROWID as rowid, c.guid as guid, c.display_name as display_name,
+              (SELECT MAX(m.date) FROM message m
+                 JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+                 WHERE cmj.chat_id = c.ROWID AND {REACTION_FILTER_SQL}) as last_message_date,
+              (SELECT COUNT(*) FROM message m
+                 JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+                 WHERE cmj.chat_id = c.ROWID AND {REACTION_FILTER_SQL}) as message_count
+            FROM chat c
+        ) t
+        WHERE {where_sql}
     """
-    rows = conn.execute(query).fetchall()
-    filtered = [r for r in rows if r["message_count"] and r["message_count"] > 0]
-    if args.since:
-        since_ns = dt_to_apple_ns(parse_when(args.since))
-        filtered = [r for r in filtered if r["last_message_date"] and r["last_message_date"] >= since_ns]
+    filtered = conn.execute(query, params).fetchall()
 
     chats = [_chat_dict(conn, r, address_book) for r in filtered]
 
@@ -599,7 +627,7 @@ def cmd_messages(args: argparse.Namespace) -> dict[str, Any]:
         return {"error": f"No chat found with guid {args.chat_guid!r}", "messages": [], "count": 0}
 
     since = parse_when(args.since) if args.since else None
-    until = parse_when(args.until) if args.until else None
+    until = until_boundary(args.until) if args.until else None
     messages, total = _messages_for_chat(
         conn, chat_row, address_book, since, until, args.limit, args.offset, args.include_reactions
     )
@@ -618,7 +646,7 @@ def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
     address_book = load_address_book()
 
     since = parse_when(args.since) if args.since else parse_when("7 days ago")
-    until = parse_when(args.until) if args.until else None
+    until = until_boundary(args.until) if args.until else None
 
     where = [REACTION_FILTER_SQL if not args.include_reactions else "1=1", "m.date >= ?"]
     params: list[Any] = [dt_to_apple_ns(since)]
@@ -627,13 +655,16 @@ def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
         params.append(dt_to_apple_ns(until))
     where_sql = " AND ".join(where)
 
+    # ORDER BY ... DESC + LIMIT so that when a window has more matches than
+    # `limit`, we keep the most recent ones (what "recent" promises) rather than
+    # the oldest; messages are put back into chronological order per-chat below.
     rows = conn.execute(
         f"""
         SELECT {MESSAGE_COLUMNS}, cmj.chat_id as chat_id
         FROM message m
         JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
         WHERE {where_sql}
-        ORDER BY m.date ASC
+        ORDER BY m.date DESC
         LIMIT ?
         """,
         [*params, args.limit],
@@ -667,6 +698,11 @@ def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
             grouped[r["chat_id"]] = bucket
         bucket["messages"].append(_row_message_dict(conn, r, chat_row["guid"], address_book, attachments))
 
+    # rows came back newest-first (see the ORDER BY above); flip each chat's
+    # messages back to chronological order for readability.
+    for bucket in grouped.values():
+        bucket["messages"].reverse()
+
     chats = sorted(grouped.values(), key=lambda c: c["messages"][-1]["date_iso"] if c["messages"] else "", reverse=True)
     conn.close()
     return {
@@ -692,7 +728,7 @@ def cmd_search(args: argparse.Namespace) -> dict[str, Any]:
         params.append(dt_to_apple_ns(parse_when(args.since)))
     if args.until:
         base_where.append("m.date <= ?")
-        params.append(dt_to_apple_ns(parse_when(args.until)))
+        params.append(dt_to_apple_ns(until_boundary(args.until)))
     base_where_sql = " AND ".join(base_where)
 
     # SQL LIKE only reaches the `text` column. A pure-SQL search would silently
@@ -716,6 +752,10 @@ def cmd_search(args: argparse.Namespace) -> dict[str, Any]:
         [*params, like_query, args.limit],
     ).fetchall()
 
+    # Bounded (unlike text_rows' plain LIMIT, this scans+decodes every candidate
+    # row before the final merge/truncation below) so a full-history search on a
+    # very large chat.db can't blow past this command's perf budget; a narrower
+    # --since/--until is still the fast path on huge local histories.
     blob_rows = conn.execute(
         f"""
         SELECT {MESSAGE_COLUMNS}, cmj.chat_id as chat_id
@@ -724,8 +764,9 @@ def cmd_search(args: argparse.Namespace) -> dict[str, Any]:
         LEFT JOIN handle h ON h.ROWID = m.handle_id
         WHERE {base_where_sql} AND m.text IS NULL AND m.attributedBody IS NOT NULL
         ORDER BY m.date DESC
+        LIMIT ?
         """,
-        params,
+        [*params, max(args.limit * 25, 2000)],
     ).fetchall()
 
     query_lower = args.query.lower()
@@ -784,28 +825,40 @@ def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
 
     candidates: list[dict[str, Any]] = []
     seen_guids: set[str] = set()
+    group_only = False
 
     for h in handles_to_try:
         if h.startswith(("iMessage;", "SMS;")):
             rows = conn.execute("SELECT ROWID as rowid, guid, display_name FROM chat WHERE guid = ?", (h,)).fetchall()
-        else:
-            digits = _normalize_digits(h)
-            # Restrict to 1:1 DMs (chat_handle_join count == 1). A handle/name query
-            # identifies one person; if they're also in group chats, those aren't
-            # what "reply to this person" should resolve to. Find groups instead via
-            # `chats --contact`.
-            rows = conn.execute(
-                """
-                SELECT c.ROWID as rowid, c.guid as guid, c.display_name as display_name
-                FROM chat c
-                JOIN chat_handle_join chj ON chj.chat_id = c.ROWID
-                JOIN handle ha ON ha.ROWID = chj.handle_id
-                WHERE (ha.id = ? OR (length(?) >= 10 AND replace(replace(replace(ha.id,'-',''),' ',''),'(','') LIKE '%' || ?))
-                  AND (SELECT COUNT(*) FROM chat_handle_join chj2 WHERE chj2.chat_id = c.ROWID) = 1
-                """,
-                (h, digits, digits[-10:] if len(digits) >= 10 else h),
-            ).fetchall()
+            for r in rows:
+                if r["guid"] in seen_guids:
+                    continue
+                seen_guids.add(r["guid"])
+                candidates.append(_chat_dict(conn, r, address_book))
+            continue
+
+        digits = _normalize_digits(h)
+        # A handle/name query identifies one person; restrict candidates to 1:1 DMs
+        # (chat_size == 1) since "reply to this person" should resolve to their
+        # direct chat, not a group they also happen to be in. Rows where the
+        # handle only turns up in group chats are counted (group_only) rather
+        # than silently discarded, so the caller can tell "not found" apart from
+        # "found, but only in groups" instead of getting an empty result either way.
+        rows = conn.execute(
+            """
+            SELECT c.ROWID as rowid, c.guid as guid, c.display_name as display_name,
+              (SELECT COUNT(*) FROM chat_handle_join chj2 WHERE chj2.chat_id = c.ROWID) as chat_size
+            FROM chat c
+            JOIN chat_handle_join chj ON chj.chat_id = c.ROWID
+            JOIN handle ha ON ha.ROWID = chj.handle_id
+            WHERE (ha.id = ? OR (length(?) >= 10 AND replace(replace(replace(ha.id,'-',''),' ',''),'(','') LIKE '%' || ?))
+            """,
+            (h, digits, digits[-10:] if len(digits) >= 10 else h),
+        ).fetchall()
         for r in rows:
+            if r["chat_size"] != 1:
+                group_only = True
+                continue
             if r["guid"] in seen_guids:
                 continue
             seen_guids.add(r["guid"])
@@ -815,6 +868,11 @@ def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
     result: dict[str, Any] = {"query": args.handle, "candidates": candidates, "count": len(candidates)}
     if len(candidates) == 1:
         result["chat_guid"] = candidates[0]["chat_guid"]
+    elif not candidates and group_only:
+        result["note"] = (
+            "This handle/name only matches group chats, not a 1:1 DM. "
+            "Use `chats --contact <name>` to find the group instead."
+        )
     return result
 
 

@@ -61,7 +61,7 @@ explanation before assuming the data doesn't exist.
 | `messages --chat-guid GUID [--since DATE] [--until DATE] [--limit N] [--offset N] [--include-reactions]` | Paginated messages for one already-known chat. |
 | `search --query TEXT [--handle HANDLE] [--since DATE] [--until DATE] [--limit N] [--include-reactions]` | Full-text search, optionally scoped to a handle and/or date range. Finds matches in both the plain `text` column and macOS 14+'s `attributedBody`-only messages (see below) — don't roll your own SQL against this DB, it'll miss the latter. |
 | `contacts [--query NAME] [--handle HANDLE]` | Resolve name -> handle or handle -> name via the local AddressBook. |
-| `resolve-chat --handle HANDLE_OR_NAME` | Resolve a phone/email/contact-name to the `chat_guid` needed for `imessage:reply`. Resolves to the 1:1 DM specifically; for a group, use `chats --contact` instead. |
+| `resolve-chat --handle HANDLE_OR_NAME` | Resolve a phone/email/contact-name to the `chat_guid` needed for `imessage:reply`. Resolves to the 1:1 DM specifically. Only present when `count == 1` — see "Handing off to send" below for what to do otherwise. |
 
 `DATE` accepts ISO 8601 (`2026-06-30`, `2026-06-30T14:00:00`), `today`/`yesterday`,
 or relative phrases like `7 days ago`.
@@ -76,21 +76,25 @@ or relative phrases like `7 days ago`.
 [imessage:reply tool, fully-qualified name] --> sends
 ```
 
-Call `resolve-chat --handle <phone, email, or contact name>` to get the `chat_guid`,
-then call the plugin's `imessage:reply` tool directly with that guid and the drafted
-text. Never write to `chat.db` or shell out to `osascript`/AppleScript from this
-skill — that's the existing plugin's job and it's already wired up.
+Call `resolve-chat --handle <phone, email, or contact name>` first. If the response
+has `count == 1`, use its `chat_guid` directly with the plugin's `imessage:reply`
+tool. If `count == 0` or more than 1, don't guess: inspect `candidates` (a group-only
+match sets a `note` field pointing you at `chats --contact` instead) or ask the user
+to disambiguate. Never write to `chat.db` or shell out to `osascript`/AppleScript from
+this skill — that's the existing plugin's job and it's already wired up.
 
 ## Reactions are filtered by default
 
 Tapbacks (love/like/laugh/etc.) and unsend/edit system messages show up in `chat.db`
 as their own message rows with readable-looking text (e.g. `Reacted ❤️ to
-"..."`). All read commands exclude these by default since they aren't real
-conversation content; pass `--include-reactions` to see them anyway.
+"..."`). `messages`, `recent`, and `search` exclude these by default since they
+aren't real conversation content; pass `--include-reactions` to see them anyway.
+`chats` has no `--include-reactions` flag — its `message_count` always excludes
+reactions, since there's nothing scoped to a single chat request to toggle.
 
 ## Known limitations
 
-- `sender_name`/`sender_handle` are `None`/`"Me"` for your own messages — this skill
+- `sender_handle`/`sender_name` are `None`/`"Me"` for your own messages — this skill
   doesn't attempt self-handle detection (the existing send plugin already handles
   self-chat specially).
 - Edited/unsent messages aren't specially flagged in this phase; you'll see whatever

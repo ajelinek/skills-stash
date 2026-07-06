@@ -119,6 +119,48 @@ class AttributedBodyDecodeTests(unittest.TestCase):
         self.assertIsNone(imessage_cli.extract_text_from_attributed_body(None))
         self.assertIsNone(imessage_cli.extract_text_from_attributed_body(b""))
 
+    def test_non_latin_script_via_nsstring_fallback(self):
+        # Regression: the fallback marker-scan used to require a printable-ASCII
+        # byte in the candidate, so a message written entirely in a non-Latin
+        # script (no bytes in \x20-\x7e even though it's valid UTF-8) would fail
+        # to decode. Fixed to check decoded-string .isprintable() instead.
+        text = "你好世界"  # "Hello world" in Chinese
+        text_bytes = text.encode("utf-8")
+        blob = (
+            b"\x04\x0b"
+            b"streamtyped"
+            b"NSString"
+            + bytes([len(text_bytes)])
+            + text_bytes
+            + b"\x00\x00\x00\x00"
+        )
+        self.assertEqual(imessage_cli.extract_text_from_attributed_body(blob), text)
+
+
+class DateBoundaryTests(unittest.TestCase):
+    def test_bare_iso_date_and_named_days_are_bare_days(self):
+        self.assertTrue(imessage_cli._is_bare_day("2026-06-30"))
+        self.assertTrue(imessage_cli._is_bare_day("today"))
+        self.assertTrue(imessage_cli._is_bare_day("yesterday"))
+        self.assertFalse(imessage_cli._is_bare_day("2026-06-30T14:00:00"))
+        self.assertFalse(imessage_cli._is_bare_day("7 days ago"))
+
+    def test_until_boundary_extends_bare_date_to_end_of_day(self):
+        # Regression: --until 2026-06-30 used to mean "at/before midnight of the
+        # 30th," excluding every message sent on the 30th itself.
+        dt = imessage_cli.until_boundary("2026-06-30")
+        self.assertEqual((dt.hour, dt.minute, dt.second), (23, 59, 59))
+
+    def test_until_boundary_leaves_explicit_timestamp_alone(self):
+        dt = imessage_cli.until_boundary("2026-06-30T14:00:00")
+        self.assertEqual((dt.hour, dt.minute, dt.second), (14, 0, 0))
+
+    def test_today_is_floored_to_midnight_like_yesterday(self):
+        # Regression: parse_when("today") used to alias to "now" instead of being
+        # floored to midnight, so --since today missed everything earlier today.
+        dt = imessage_cli.parse_when("today")
+        self.assertEqual((dt.hour, dt.minute, dt.second, dt.microsecond), (0, 0, 0, 0))
+
 
 class CliFixtureTestCase(unittest.TestCase):
     """Builds a synthetic chat.db + AddressBook DB and drives the CLI end-to-end."""
@@ -264,6 +306,16 @@ class CliFixtureTestCase(unittest.TestCase):
         self.assertEqual(result["count"], 1)
         self.assertEqual(result["chats"][0]["chat_guid"], "iMessage;+;chat123456")
 
+    def test_chats_since_filters_by_last_activity(self):
+        # Regression: --since used to build a WHERE clause that was never actually
+        # applied to the SQL query (filtering was silently redone from scratch in
+        # Python two lines later). Weekend Crew's last real activity is 5 days ago;
+        # Jane's DM has a message as recent as 0.5 days ago.
+        result = imessage_cli.cmd_chats(argparse_ns(since="2 days ago", contact=None, limit=20))
+        guids = [c["chat_guid"] for c in result["chats"]]
+        self.assertIn("iMessage;-;+15551234567", guids)
+        self.assertNotIn("iMessage;+;chat123456", guids)
+
     # ---- messages ----
 
     def test_messages_decodes_attributed_body_and_resolves_names(self):
@@ -281,6 +333,48 @@ class CliFixtureTestCase(unittest.TestCase):
         me_msg = by_text["Yes! See you at 10"]
         self.assertTrue(me_msg["is_from_me"])
         self.assertEqual(me_msg["sender_name"], "Me")
+
+    def test_message_and_participant_names_use_digit_normalization_fallback(self):
+        # Regression: sender_name / participant name lookups used to do a bare
+        # dict.get(handle) instead of resolve_handle_to_name()'s digit-normalized
+        # fallback. A real macOS Contacts entry commonly stores a number in a
+        # non-canonical, non-"+"-prefixed format, e.g. "(555) 111-2222" — in that
+        # case only the digits[-10:] fuzzy key gets populated by
+        # load_address_book(), not a "+"-prefixed key matching chat.db's handle.id
+        # verbatim.
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("INSERT INTO handle (ROWID, id, service) VALUES (3, '+15551112222', 'iMessage')")
+        conn.execute(
+            "INSERT INTO chat (ROWID, guid, chat_identifier, display_name, style, service_name) "
+            "VALUES (3, 'iMessage;-;+15551112222', '+15551112222', NULL, 45, 'iMessage')"
+        )
+        conn.execute("INSERT INTO chat_handle_join (chat_id, handle_id) VALUES (3, 3)")
+        conn.execute(
+            """INSERT INTO message
+               (ROWID, guid, text, attributedBody, handle_id, is_from_me, date,
+                cache_has_attachments, associated_message_guid, associated_message_type, service)
+               VALUES (9, 'm-9', 'hello from a formatted number', NULL, 3, 0, ?, 0, NULL, 0, 'iMessage')""",
+            (to_apple_ns(1.0),),
+        )
+        conn.execute("INSERT INTO chat_message_join (chat_id, message_id) VALUES (3, 9)")
+        conn.commit()
+        conn.close()
+
+        ab_conn = sqlite3.connect(os.path.join(self.addressbook_dir, "SOURCE1", "AddressBook-v22.abcddb"))
+        ab_conn.execute("INSERT INTO ZABCDRECORD (Z_PK, ZFIRSTNAME, ZLASTNAME) VALUES (3, 'Charlie', 'Nguyen')")
+        ab_conn.execute("INSERT INTO ZABCDPHONENUMBER (ZOWNER, ZFULLNUMBER) VALUES (3, '(555) 111-2222')")
+        ab_conn.commit()
+        ab_conn.close()
+
+        messages_result = imessage_cli.cmd_messages(
+            argparse_ns(chat_guid="iMessage;-;+15551112222", since=None, until=None,
+                        limit=100, offset=0, include_reactions=False)
+        )
+        self.assertEqual(messages_result["messages"][0]["sender_name"], "Charlie Nguyen")
+
+        chats_result = imessage_cli.cmd_chats(argparse_ns(since=None, contact=None, limit=20))
+        charlie_chat = next(c for c in chats_result["chats"] if c["chat_guid"] == "iMessage;-;+15551112222")
+        self.assertEqual(charlie_chat["participants"], [{"handle": "+15551112222", "name": "Charlie Nguyen"}])
 
     def test_messages_includes_attachment_paths(self):
         result = imessage_cli.cmd_messages(
@@ -325,6 +419,17 @@ class CliFixtureTestCase(unittest.TestCase):
         )
         all_texts = [m["text"] for c in result["chats"] for m in c["messages"]]
         self.assertIn("ancient history message", all_texts)
+
+    def test_recent_limit_keeps_most_recent_not_oldest(self):
+        # Regression: ORDER BY m.date ASC LIMIT ? used to return the OLDEST
+        # matching messages once the window's message count exceeded the limit —
+        # the opposite of what "recent" should return.
+        result = imessage_cli.cmd_recent(
+            argparse_ns(since=None, until=None, limit=3, include_reactions=False)
+        )
+        all_texts = [m["text"] for c in result["chats"] for m in c["messages"]]
+        self.assertIn("Check this photo out", all_texts)  # most recent, 0.5 days ago
+        self.assertNotIn("who's driving Saturday", all_texts)  # oldest in-window, 5 days ago
 
     # ---- search ----
 
@@ -374,6 +479,22 @@ class CliFixtureTestCase(unittest.TestCase):
     def test_resolve_chat_by_name(self):
         result = imessage_cli.cmd_resolve_chat(argparse_ns(handle="Jane"))
         self.assertIn("iMessage;-;+15551234567", [c["chat_guid"] for c in result["candidates"]])
+
+    def test_resolve_chat_group_only_handle_returns_note_not_bare_empty(self):
+        # Regression: a handle that only appears in group chats used to be
+        # filtered out at the SQL level, making "found, but only in groups"
+        # indistinguishable from "handle not found at all" (both: count=0, no
+        # other signal). Bob only appears in the "Weekend Crew" group, no 1:1 DM.
+        result = imessage_cli.cmd_resolve_chat(argparse_ns(handle="+15559876543"))
+        self.assertEqual(result["count"], 0)
+        self.assertNotIn("chat_guid", result)
+        self.assertIn("note", result)
+        self.assertIn("group", result["note"].lower())
+
+    def test_resolve_chat_truly_unknown_handle_has_no_note(self):
+        result = imessage_cli.cmd_resolve_chat(argparse_ns(handle="+19999999999"))
+        self.assertEqual(result["count"], 0)
+        self.assertNotIn("note", result)
 
 
 class ArgNamespace:

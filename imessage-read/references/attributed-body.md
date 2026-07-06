@@ -53,8 +53,10 @@ implementation we didn't pick.
 2. Search for the `0x01 0x2B` marker. If found, the length prefix starts right after
    the `0x2B`.
 3. If not found, fall back to locating a literal `NSString` class reference and
-   scanning forward (bounded window) for a length prefix whose decoded bytes look
-   like printable text (has printable ASCII, no control characters below `0x09`).
+   scanning forward (bounded window) for a length prefix that decodes as UTF-8 and
+   looks like real text (`str.isprintable()` on the decoded string — not an ASCII
+   byte-range check, so non-Latin scripts like Chinese/Japanese/Korean/Cyrillic/
+   Arabic still pass — with no control characters below `0x09`).
 4. Read the length using the three-tier scheme described above.
 5. Decode the indicated byte range as UTF-8. Return `None` on any failure at any
    step — callers fall back to the `text` column, never raise.
