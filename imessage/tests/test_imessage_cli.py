@@ -496,6 +496,117 @@ class CliFixtureTestCase(unittest.TestCase):
         self.assertEqual(result["count"], 0)
         self.assertNotIn("note", result)
 
+    # ---- send ----
+    #
+    # None of these ever shell out to real osascript: send_via_applescript is
+    # monkeypatched (or, for the wrapper's own tests, subprocess.run is faked with a
+    # stand-in CompletedProcess) so the suite never sends an actual iMessage.
+
+    def _patch_send(self):
+        calls = []
+
+        def fake_send(chat_guid, text):
+            calls.append((chat_guid, text))
+
+        old_send = imessage_cli.send_via_applescript
+        imessage_cli.send_via_applescript = fake_send
+        self.addCleanup(setattr, imessage_cli, "send_via_applescript", old_send)
+        return calls
+
+    def test_send_by_chat_guid(self):
+        calls = self._patch_send()
+        result = imessage_cli.cmd_send(
+            argparse_ns(chat_guid="iMessage;-;+15551234567", handle=None, text="hi there")
+        )
+        self.assertEqual(result, {"sent": True, "chat_guid": "iMessage;-;+15551234567", "text": "hi there"})
+        self.assertEqual(calls, [("iMessage;-;+15551234567", "hi there")])
+
+    def test_send_by_handle_resolves_to_single_dm(self):
+        calls = self._patch_send()
+        result = imessage_cli.cmd_send(argparse_ns(chat_guid=None, handle="Jane", text="hi Jane"))
+        self.assertEqual(result["chat_guid"], "iMessage;-;+15551234567")
+        self.assertEqual(calls, [("iMessage;-;+15551234567", "hi Jane")])
+
+    def test_send_by_handle_group_only_raises_without_sending(self):
+        calls = self._patch_send()
+        # Bob only appears in "Weekend Crew" (see test_resolve_chat_group_only_handle...).
+        with self.assertRaises(ValueError) as ctx:
+            imessage_cli.cmd_send(argparse_ns(chat_guid=None, handle="+15559876543", text="hi Bob"))
+        self.assertIn("No chat found", str(ctx.exception))
+        self.assertEqual(calls, [])
+
+    def test_send_by_handle_unknown_raises_without_sending(self):
+        calls = self._patch_send()
+        with self.assertRaises(ValueError):
+            imessage_cli.cmd_send(argparse_ns(chat_guid=None, handle="+10000000000", text="hi"))
+        self.assertEqual(calls, [])
+
+    def test_send_empty_text_raises_without_sending(self):
+        calls = self._patch_send()
+        with self.assertRaises(ValueError):
+            imessage_cli.cmd_send(argparse_ns(chat_guid="iMessage;-;+15551234567", handle=None, text="   "))
+        self.assertEqual(calls, [])
+
+    def test_send_text_over_limit_raises_without_sending(self):
+        calls = self._patch_send()
+        with self.assertRaises(ValueError):
+            imessage_cli.cmd_send(
+                argparse_ns(
+                    chat_guid="iMessage;-;+15551234567",
+                    handle=None,
+                    text="x" * (imessage_cli.MAX_SEND_TEXT_LENGTH + 1),
+                )
+            )
+        self.assertEqual(calls, [])
+
+
+class SendViaApplescriptTests(unittest.TestCase):
+    """Exercises send_via_applescript itself against a faked subprocess.run, so the
+    osascript argv wiring and error mapping are covered without ever invoking real
+    osascript or touching Messages.app."""
+
+    def setUp(self):
+        self._old_run = imessage_cli.subprocess.run
+        self.addCleanup(setattr, imessage_cli.subprocess, "run", self._old_run)
+
+    def _fake_completed(self, returncode, stderr=""):
+        class FakeCompleted:
+            pass
+
+        fc = FakeCompleted()
+        fc.returncode = returncode
+        fc.stderr = stderr
+        fc.stdout = ""
+        return fc
+
+    def test_success_invokes_osascript_with_chat_guid_and_text_as_argv(self):
+        recorded = {}
+
+        def fake_run(cmd, **kwargs):
+            recorded["cmd"] = cmd
+            return self._fake_completed(0)
+
+        imessage_cli.subprocess.run = fake_run
+        imessage_cli.send_via_applescript("iMessage;-;+15551234567", "hello")
+        self.assertEqual(recorded["cmd"][0], "osascript")
+        # chat_guid and text travel as trailing argv items, not interpolated into the
+        # script string — no shell, no quoting footgun.
+        self.assertEqual(recorded["cmd"][-2:], ["iMessage;-;+15551234567", "hello"])
+
+    def test_nonzero_returncode_raises_send_failed_with_stderr(self):
+        imessage_cli.subprocess.run = lambda cmd, **kwargs: self._fake_completed(1, stderr="Can't get chat id")
+        with self.assertRaises(imessage_cli.SendFailed) as ctx:
+            imessage_cli.send_via_applescript("bogus-guid", "hi")
+        self.assertIn("Can't get chat id", str(ctx.exception))
+
+    def test_missing_osascript_raises_send_failed(self):
+        def fake_run(cmd, **kwargs):
+            raise FileNotFoundError("no such file")
+
+        imessage_cli.subprocess.run = fake_run
+        with self.assertRaises(imessage_cli.SendFailed):
+            imessage_cli.send_via_applescript("guid", "hi")
+
 
 class ArgNamespace:
     def __init__(self, **kwargs):

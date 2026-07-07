@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Read-only query tool for the local iMessage database (~/Library/Messages/chat.db).
+"""Query and send local iMessages (~/Library/Messages/chat.db plus Messages.app).
 
-Every subcommand opens the database read-only, queries, closes, and prints one JSON
-object to stdout. No writes, no network calls, no persistent process. Sending is out
-of scope — hand `resolve-chat`'s chat_guid to the existing imessage plugin's `reply` tool.
+Read subcommands open chat.db read-only, query, close, and print one JSON object to
+stdout — no writes, no persistent process. `send` never touches chat.db at all: it
+hands text and a chat_guid to `osascript`, which tells Messages.app to deliver it via
+AppleScript. No network calls of this module's own either way — delivery is entirely
+Messages.app/iMessage's problem once osascript hands it off.
 
 See ../references/ for the chat.db schema, the attributedBody decode approach, and
 known platform caveats (macOS 14+ NULL text column, iCloud multi-device sync, TCC
-permissions) this module works around.
+permissions for reading, Automation permission for sending) this module works around.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -373,8 +376,15 @@ def _address_book_dbs() -> list[str]:
     sources_dir = address_book_sources_dir()
     if not os.path.isdir(sources_dir):
         return []
+    try:
+        entries = sorted(os.listdir(sources_dir))
+    except PermissionError:
+        # TCC can let isdir() see the directory while still denying listdir() on it
+        # (observed on real macOS: Full Disk Access not yet granted). Treat like "no
+        # sources" so callers fall back to raw handles instead of crashing outright.
+        return []
     found = []
-    for entry in sorted(os.listdir(sources_dir)):
+    for entry in entries:
         candidate = os.path.join(sources_dir, entry, "AddressBook-v22.abcddb")
         if os.path.exists(candidate):
             found.append(candidate)
@@ -410,7 +420,13 @@ def load_address_book() -> dict[str, str]:
                 if len(digits) >= 10:
                     cache[digits[-10:]] = name
                 if row["number"].startswith("+"):
-                    cache[row["number"]] = name
+                    # Normalize to bare "+<digits>" rather than keying on the raw string —
+                    # AddressBook can store the same number with different punctuation across
+                    # sources (e.g. "+13092795518" vs "+1 309-279-5518"), and chat.db's handle.id
+                    # is always the clean form. Keying on the raw string produced duplicate
+                    # contacts/candidates for one physical person (observed on a real Mac with
+                    # multiple synced AddressBook sources).
+                    cache["+" + digits] = name
 
             for row in conn.execute(
                 """
@@ -807,12 +823,9 @@ def cmd_contacts(args: argparse.Namespace) -> dict[str, Any]:
     return {"contacts": contacts, "count": len(contacts)}
 
 
-def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
-    conn = open_db()
-    address_book = load_address_book()
-
+def _resolve_chat(conn: sqlite3.Connection, address_book: dict[str, str], query: str) -> dict[str, Any]:
     handles_to_try: list[str] = []
-    query = args.handle.strip()
+    query = query.strip()
 
     # Already looks like a chat guid or a handle address.
     if query.startswith(("iMessage;", "SMS;", "+")) or "@" in query:
@@ -864,8 +877,7 @@ def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
             seen_guids.add(r["guid"])
             candidates.append(_chat_dict(conn, r, address_book))
 
-    conn.close()
-    result: dict[str, Any] = {"query": args.handle, "candidates": candidates, "count": len(candidates)}
+    result: dict[str, Any] = {"query": query, "candidates": candidates, "count": len(candidates)}
     if len(candidates) == 1:
         result["chat_guid"] = candidates[0]["chat_guid"]
     elif not candidates and group_only:
@@ -874,6 +886,101 @@ def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
             "Use `chats --contact <name>` to find the group instead."
         )
     return result
+
+
+def _resolve_single_chat_guid(conn: sqlite3.Connection, address_book: dict[str, str], query: str) -> str:
+    """Resolve `query` to exactly one chat_guid for `send --handle`, raising
+    ValueError (surfaced as a clean JSON error, not a traceback) if it's ambiguous
+    or unknown — `send` should never guess which chat to deliver to."""
+    result = _resolve_chat(conn, address_book, query)
+    if result["count"] == 1:
+        return result["chat_guid"]
+    if result["count"] == 0:
+        note = result.get("note")
+        raise ValueError(f"No chat found for {query!r}.{(' ' + note) if note else ''}")
+    raise ValueError(
+        f"{query!r} matches {result['count']} chats — ambiguous, refusing to guess. "
+        f"Run `resolve-chat --handle {query!r}` to see candidates, then call `send` "
+        f"again with an exact --chat-guid."
+    )
+
+
+def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
+    conn = open_db()
+    address_book = load_address_book()
+    try:
+        return _resolve_chat(conn, address_book, args.handle)
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------------
+# Sending (AppleScript via osascript — no chat.db writes, no persistent process)
+# --------------------------------------------------------------------------------
+
+class SendFailed(Exception):
+    pass
+
+
+# 10,000 chars matches the Anthropic imessage plugin's own auto-split threshold; here
+# it's a hard cap rather than a silent auto-split, since a failed send should surface
+# to the caller instead of quietly turning one message into several.
+MAX_SEND_TEXT_LENGTH = 10_000
+
+# Text and chat_guid arrive as `argv` entries below the script itself, not interpolated
+# into the script source — no shell, no quoting/escaping footgun.
+_SEND_APPLESCRIPT = """
+on run argv
+    set targetChatGuid to item 1 of argv
+    set messageText to item 2 of argv
+    tell application "Messages"
+        set targetChat to a reference to chat id targetChatGuid
+        send messageText to targetChat
+    end tell
+end run
+"""
+
+
+def send_via_applescript(chat_guid: str, text: str) -> None:
+    try:
+        proc = subprocess.run(
+            ["osascript", "-e", _SEND_APPLESCRIPT, chat_guid, text],
+            capture_output=True, text=True, timeout=15,
+        )
+    except FileNotFoundError as exc:
+        raise SendFailed("osascript not found — sending only works on macOS with Messages.app.") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise SendFailed("osascript timed out after 15s waiting on Messages.app.") from exc
+    if proc.returncode != 0:
+        raise SendFailed(
+            f"Messages.app rejected the send (chat_guid={chat_guid!r}): "
+            f"{proc.stderr.strip() or 'unknown osascript error'}. If this is the first send this "
+            f"session, macOS may be waiting on an Automation permission prompt for Messages.app — "
+            f"check System Settings -> Privacy & Security -> Automation."
+        )
+
+
+def cmd_send(args: argparse.Namespace) -> dict[str, Any]:
+    text = args.text
+    if not text or not text.strip():
+        raise ValueError("--text must not be empty.")
+    if len(text) > MAX_SEND_TEXT_LENGTH:
+        raise ValueError(
+            f"--text is {len(text)} characters, over this skill's {MAX_SEND_TEXT_LENGTH}-character "
+            f"send limit. Split it into multiple `send` calls."
+        )
+
+    if args.chat_guid:
+        chat_guid = args.chat_guid
+    else:
+        conn = open_db()
+        try:
+            chat_guid = _resolve_single_chat_guid(conn, load_address_book(), args.handle)
+        finally:
+            conn.close()
+
+    send_via_applescript(chat_guid, text)
+    return {"sent": True, "chat_guid": chat_guid, "text": text}
 
 
 # --------------------------------------------------------------------------------
@@ -923,9 +1030,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--handle")
     p.set_defaults(func=cmd_contacts)
 
-    p = sub.add_parser("resolve-chat", help="Resolve a handle or contact name to a chat_guid for the send plugin.")
+    p = sub.add_parser("resolve-chat", help="Resolve a handle or contact name to a chat_guid.")
     p.add_argument("--handle", required=True)
     p.set_defaults(func=cmd_resolve_chat)
+
+    p = sub.add_parser("send", help="Send a text message to an existing chat (1:1 or group) via Messages.app.")
+    target = p.add_mutually_exclusive_group(required=True)
+    target.add_argument("--chat-guid", help="Exact chat_guid, e.g. from `resolve-chat` or `chats`.")
+    target.add_argument("--handle", help="Phone/email/contact name; must resolve to exactly one chat.")
+    p.add_argument("--text", required=True)
+    p.set_defaults(func=cmd_send)
 
     return parser
 
@@ -935,7 +1049,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         output = args.func(args)
-    except DbUnavailable as exc:
+    except (DbUnavailable, SendFailed) as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stdout)
         return 1
     except ValueError as exc:

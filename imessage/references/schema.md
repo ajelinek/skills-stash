@@ -40,9 +40,10 @@ cross-checked against the `db.ts` in both
   `!= 0` out by default.
 
 **`chat`**
-- `ROWID`, `guid` — `guid` is what the existing send plugin's `imessage:reply` tool
-  expects as `chat_id`. Format observed: `iMessage;-;+15551234567` for a 1:1 DM,
-  `iMessage;+;chat<hash>` for a group (per the official plugin's `ACCESS.md`).
+- `ROWID`, `guid` — `guid` is what this skill's own `send --chat-guid` (and
+  AppleScript's `chat id`) expect. Format observed: `iMessage;-;+15551234567` for a
+  1:1 DM, `iMessage;+;chat<hash>` for a group (per the official Anthropic imessage
+  plugin's `ACCESS.md`, which uses the same chat.db guid format for its own sends).
 - `display_name` — set for named group chats, `NULL` for DMs and unnamed groups.
 
 **`handle`**

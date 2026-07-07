@@ -25,6 +25,22 @@ numbers/emails instead of names, and `doctor` reports `address_book_found: false
 as a warning, not a failure — name resolution is a nice-to-have, not a hard
 requirement to use this skill.
 
+## Automation permission (TCC) for sending
+
+`send` never touches `chat.db` — it shells out to `osascript`, which tells
+Messages.app to deliver the text via AppleScript's `tell application "Messages" to
+send`. macOS gates this separately from Full Disk Access: the first `send` call in a
+session (or after an OS update) triggers an **Automation** permission prompt for
+whatever app is running the script ("Terminal wants to control Messages.app" or
+similar). If the user dismissed or never saw that prompt, `osascript` exits nonzero
+and `send_via_applescript()` raises `SendFailed` with the fix pointer:
+
+System Settings -> Privacy & Security -> Automation -> find the terminal/app running
+Claude Code -> enable Messages.
+
+A denied/missing grant here does not affect `doctor` or any read command — Full Disk
+Access and Automation are independent TCC checks.
+
 ## iCloud multi-device sync
 
 `chat.db` only contains what has synced to **this** Mac. If "Messages in iCloud" is

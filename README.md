@@ -35,7 +35,7 @@ npx skills add ajelinek/skills-stash ui-engineering
 npx skills add ajelinek/skills-stash astro-seo
 npx skills add ajelinek/skills-stash cmux-workspace-builder
 npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
-npx skills add ajelinek/skills-stash imessage-read
+npx skills add ajelinek/skills-stash imessage
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -49,7 +49,7 @@ npx skills add ajelinek/skills-stash imessage-read
 | `astro-seo`                    | Astro-specific SEO: structured data, IndexNow, performance SEO, and meta management                                                                   |
 | `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
-| `imessage-read`                | Read-only iMessage history queries (date range, contact, search) against local chat.db, with contact resolution and chat_guid hand-off to the existing send plugin |
+| `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
 
 ---
 
