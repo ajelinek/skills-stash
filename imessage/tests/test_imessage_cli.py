@@ -174,15 +174,23 @@ class CliFixtureTestCase(unittest.TestCase):
         self._build_chat_db()
         self._build_address_book()
 
+        self.trusted_contacts_path = os.path.join(self.tmpdir, "trusted_contacts.json")
+
         self._old_db_env = os.environ.get("IMESSAGE_DB_PATH")
         self._old_ab_env = os.environ.get("IMESSAGE_ADDRESSBOOK_DIR")
+        self._old_tc_env = os.environ.get("IMESSAGE_TRUSTED_CONTACTS_PATH")
         os.environ["IMESSAGE_DB_PATH"] = self.db_path
         os.environ["IMESSAGE_ADDRESSBOOK_DIR"] = self.addressbook_dir
+        os.environ["IMESSAGE_TRUSTED_CONTACTS_PATH"] = self.trusted_contacts_path
         imessage_cli._handle_cache.clear()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
-        for var, old in (("IMESSAGE_DB_PATH", self._old_db_env), ("IMESSAGE_ADDRESSBOOK_DIR", self._old_ab_env)):
+        for var, old in (
+            ("IMESSAGE_DB_PATH", self._old_db_env),
+            ("IMESSAGE_ADDRESSBOOK_DIR", self._old_ab_env),
+            ("IMESSAGE_TRUSTED_CONTACTS_PATH", self._old_tc_env),
+        ):
             if old is None:
                 os.environ.pop(var, None)
             else:
@@ -495,6 +503,98 @@ class CliFixtureTestCase(unittest.TestCase):
         result = imessage_cli.cmd_resolve_chat(argparse_ns(handle="+19999999999"))
         self.assertEqual(result["count"], 0)
         self.assertNotIn("note", result)
+
+    # ---- trusted contacts ----
+
+    def test_sender_trusted_is_none_for_own_messages_and_false_by_default(self):
+        result = imessage_cli.cmd_messages(
+            argparse_ns(chat_guid="iMessage;-;+15551234567", since=None, until=None,
+                        limit=100, offset=0, include_reactions=False)
+        )
+        by_text = {m["text"]: m for m in result["messages"]}
+        self.assertIsNone(by_text["Yes! See you at 10"]["sender_trusted"])  # is_from_me
+        self.assertFalse(by_text["Hey are we still on for Saturday?"]["sender_trusted"])
+
+    def test_sender_trusted_true_once_handle_is_added(self):
+        imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name="Jane Doe", note=None))
+        result = imessage_cli.cmd_messages(
+            argparse_ns(chat_guid="iMessage;-;+15551234567", since=None, until=None,
+                        limit=100, offset=0, include_reactions=False)
+        )
+        by_text = {m["text"]: m for m in result["messages"]}
+        self.assertTrue(by_text["Hey are we still on for Saturday?"]["sender_trusted"])
+
+    def test_sender_trusted_matches_differently_formatted_phone_number(self):
+        # Same digit-normalization fallback as resolve_handle_to_name — a trusted
+        # entry typed as "(555) 123-4567" should still match chat.db's "+15551234567".
+        imessage_cli.cmd_trusted_add(argparse_ns(handle="(555) 123-4567", name=None, note=None))
+        result = imessage_cli.cmd_recent(
+            argparse_ns(since="7 days ago", until=None, limit=500, include_reactions=False)
+        )
+        jane_messages = [
+            m for chat in result["chats"] for m in chat["messages"] if m["sender_handle"] == "+15551234567"
+        ]
+        self.assertTrue(jane_messages)
+        self.assertTrue(all(m["sender_trusted"] for m in jane_messages))
+
+    def test_trusted_add_list_remove_roundtrip(self):
+        added = imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name="Jane Doe", note="spouse"))
+        self.assertEqual(added["added"], {"handle": "+15551234567", "name": "Jane Doe", "note": "spouse"})
+
+        listed = imessage_cli.cmd_trusted_list(argparse_ns())
+        self.assertEqual(listed["count"], 1)
+        self.assertEqual(listed["trusted_contacts"][0]["handle"], "+15551234567")
+
+        # File is written to disk, not just held in memory.
+        self.assertTrue(os.path.exists(self.trusted_contacts_path))
+        with open(self.trusted_contacts_path) as f:
+            on_disk = json.load(f)
+        self.assertEqual(on_disk["trusted_contacts"][0]["handle"], "+15551234567")
+
+        removed = imessage_cli.cmd_trusted_remove(argparse_ns(handle="+15551234567"))
+        self.assertEqual(removed["removed_count"], 1)
+        self.assertEqual(imessage_cli.cmd_trusted_list(argparse_ns())["count"], 0)
+
+    def test_trusted_add_duplicate_raises(self):
+        imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name=None, note=None))
+        with self.assertRaises(ValueError):
+            imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name=None, note=None))
+
+    def test_trusted_remove_unknown_handle_raises(self):
+        with self.assertRaises(ValueError):
+            imessage_cli.cmd_trusted_remove(argparse_ns(handle="+19999999999"))
+
+    def test_trusted_list_on_missing_file_is_empty(self):
+        self.assertFalse(os.path.exists(self.trusted_contacts_path))
+        result = imessage_cli.cmd_trusted_list(argparse_ns())
+        self.assertEqual(result, {"trusted_contacts": [], "count": 0, "path": self.trusted_contacts_path})
+
+    def test_trusted_suggest_ranks_by_message_count_and_excludes_trusted(self):
+        # Jane (+15551234567) has 5 non-reaction messages in the fixture, Bob
+        # (+15559876543) has 1 — see _build_chat_db.
+        result = imessage_cli.cmd_trusted_suggest(argparse_ns(since=None, limit=10))
+        handles = [c["handle"] for c in result["candidates"]]
+        self.assertEqual(handles[0], "+15551234567")
+        jane = next(c for c in result["candidates"] if c["handle"] == "+15551234567")
+        self.assertEqual(jane["name"], "Jane Doe")
+        self.assertGreater(jane["message_count"], 1)
+
+        imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name=None, note=None))
+        result = imessage_cli.cmd_trusted_suggest(argparse_ns(since=None, limit=10))
+        self.assertNotIn("+15551234567", [c["handle"] for c in result["candidates"]])
+
+    def test_trusted_suggest_respects_limit(self):
+        result = imessage_cli.cmd_trusted_suggest(argparse_ns(since=None, limit=1))
+        self.assertEqual(result["count"], 1)
+
+    def test_doctor_reports_trusted_contact_count_and_onboarding_warning(self):
+        result = imessage_cli.cmd_doctor(argparse_ns())
+        self.assertEqual(result["trusted_contact_count"], 0)
+        self.assertTrue(any("trusted" in w.lower() for w in result["warnings"]))
+
+        imessage_cli.cmd_trusted_add(argparse_ns(handle="+15551234567", name=None, note=None))
+        result = imessage_cli.cmd_doctor(argparse_ns())
+        self.assertEqual(result["trusted_contact_count"], 1)
 
     # ---- send ----
     #

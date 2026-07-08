@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# The real trusted-contacts file (phone numbers/emails/names) — never tracked, so a
+# populated list can't end up in a commit to this public repo. trusted_contacts.example.json
+# (tracked, always empty) is the template; trusted-add/trusted-remove write this file.
+trusted_contacts.json
