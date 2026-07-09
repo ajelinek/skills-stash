@@ -1,0 +1,11 @@
+{
+  "googleApplicationCredentials": ".claude/fake-sa.json",
+  "accountCorrelations": [
+    {
+      "githubUsername": "adam",
+      "firebaseUid": "uid_000001",
+      "googleEmail": "adam@shadetreeit.biz",
+      "displayName": "Adam"
+    }
+  ]
+}

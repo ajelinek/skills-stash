@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skills-stash.local/website-health-analytics/daily-metrics.schema.json",
+  "title": "website-health-analytics canonical daily dataset",
+  "description": "Output contract of scripts/normalize-timeseries.mjs: one object keyed by ISO date (in the configured timezone), merging GA4, GSC, Firebase Auth, and GitHub sources. This is the input to scripts/detect-anomalies.mjs. Missing metric for a day is null (source didn't report that day); a metric is zero only when its source reported the day with zero matching rows.",
+  "type": "object",
+  "required": ["meta", "days"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["timezone", "generatedAt", "sources", "warnings"],
+      "additionalProperties": false,
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "description": "IANA timezone name used to bucket UTC timestamps (Firebase/GitHub) into calendar days.",
+          "examples": ["America/New_York"]
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC ISO 8601 timestamp of when normalize-timeseries.mjs produced this dataset."
+        },
+        "sources": {
+          "type": "array",
+          "description": "Which raw sources were actually found and loaded from --in (subset of ga4, gsc, firebase, github).",
+          "items": { "type": "string", "enum": ["ga4", "gsc", "firebase", "github"] }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Non-fatal issues encountered while normalizing (e.g. a source directory had no matching files).",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "days": {
+      "type": "object",
+      "description": "Keyed by calendar date (YYYY-MM-DD) in meta.timezone.",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\d{4}-\\d{2}-\\d{2}$": { "$ref": "#/$defs/dayMetrics" }
+      }
+    }
+  },
+  "$defs": {
+    "dayMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sessions": {
+          "type": ["integer", "null"],
+          "description": "GA4 sessions. null if GA4 didn't report this day."
+        },
+        "activeUsers": {
+          "type": ["integer", "null"],
+          "description": "GA4 active users. null if GA4 didn't report this day."
+        },
+        "conversions": {
+          "type": ["number", "null"],
+          "description": "GA4 conversions. null if GA4 didn't report this day."
+        },
+        "newUsers": {
+          "type": ["integer", "null"],
+          "description": "GA4 new users. null if GA4 didn't report this day."
+        },
+        "clicks": {
+          "type": ["integer", "null"],
+          "description": "GSC clicks. null if GSC didn't report this day."
+        },
+        "impressions": {
+          "type": ["integer", "null"],
+          "description": "GSC impressions. null if GSC didn't report this day."
+        },
+        "ctr": {
+          "type": ["number", "null"],
+          "description": "GSC click-through rate (0-1). null if GSC didn't report this day."
+        },
+        "avgPosition": {
+          "type": ["number", "null"],
+          "description": "GSC average position. Lower is better; an increase is a regression. null if GSC didn't report this day."
+        },
+        "signups": {
+          "type": ["integer", "null"],
+          "description": "Count of Firebase Auth users whose createdAt fell on this day (in meta.timezone). null if no firebase-users-*.json was loaded."
+        },
+        "signupsByProvider": {
+          "type": ["object", "null"],
+          "description": "Signups on this day keyed by providerUserInfo[].providerId (e.g. 'password', 'google.com'). null if no firebase-users-*.json was loaded.",
+          "additionalProperties": { "type": "integer" }
+        },
+        "deploys": {
+          "type": "array",
+          "description": "GitHub deploy-shaped events (deployments, successful workflow runs, merged PRs) attributed to this day. Always an array (empty, not null, when github-events.json was loaded but nothing landed this day).",
+          "items": {
+            "type": "object",
+            "required": ["sha", "at", "source"],
+            "additionalProperties": false,
+            "properties": {
+              "sha": { "type": ["string", "null"] },
+              "at": { "type": "string", "format": "date-time" },
+              "source": { "type": "string", "enum": ["deployment", "run", "pr"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

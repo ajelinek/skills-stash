@@ -36,6 +36,7 @@ npx skills add ajelinek/skills-stash astro-seo
 npx skills add ajelinek/skills-stash cmux-workspace-builder
 npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 npx skills add ajelinek/skills-stash imessage
+npx skills add ajelinek/skills-stash process-mining
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -50,6 +51,7 @@ npx skills add ajelinek/skills-stash imessage
 | `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 | `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
+| `process-mining`               | Mines a Claude.ai/Cowork data export to find recurring real-world workflows and recommend which ones should become skills vs. scheduled tasks |
 
 ---
 

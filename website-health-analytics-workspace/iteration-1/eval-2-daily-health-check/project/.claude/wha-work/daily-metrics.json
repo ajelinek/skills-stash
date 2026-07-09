@@ -1,0 +1,597 @@
+{
+  "meta": {
+    "timezone": "America/New_York",
+    "generatedAt": "2026-07-09T00:53:03.664Z",
+    "sources": [
+      "ga4",
+      "gsc",
+      "firebase",
+      "github"
+    ],
+    "warnings": []
+  },
+  "days": {
+    "2026-06-02": {
+      "sessions": 1218,
+      "activeUsers": 1069,
+      "conversions": 41,
+      "newUsers": 304,
+      "clicks": 225,
+      "impressions": 9100,
+      "ctr": 0.0247,
+      "avgPosition": 12.16,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-03": {
+      "sessions": 1217,
+      "activeUsers": 1068,
+      "conversions": 41,
+      "newUsers": 306,
+      "clicks": 224,
+      "impressions": 9104,
+      "ctr": 0.0246,
+      "avgPosition": 12.13,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-04": {
+      "sessions": 1218,
+      "activeUsers": 1072,
+      "conversions": 42,
+      "newUsers": 305,
+      "clicks": 226,
+      "impressions": 9080,
+      "ctr": 0.0249,
+      "avgPosition": 12.32,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-05": {
+      "sessions": 1251,
+      "activeUsers": 1106,
+      "conversions": 42,
+      "newUsers": 307,
+      "clicks": 236,
+      "impressions": 9212,
+      "ctr": 0.0256,
+      "avgPosition": 12.54,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-06": {
+      "sessions": 1259,
+      "activeUsers": 1105,
+      "conversions": 40,
+      "newUsers": 311,
+      "clicks": 232,
+      "impressions": 9346,
+      "ctr": 0.0248,
+      "avgPosition": 12.14,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-07": {
+      "sessions": 1224,
+      "activeUsers": 1071,
+      "conversions": 40,
+      "newUsers": 310,
+      "clicks": 222,
+      "impressions": 9262,
+      "ctr": 0.024,
+      "avgPosition": 12.06,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-08": {
+      "sessions": 1206,
+      "activeUsers": 1055,
+      "conversions": 39,
+      "newUsers": 302,
+      "clicks": 224,
+      "impressions": 9078,
+      "ctr": 0.0247,
+      "avgPosition": 11.95,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-09": {
+      "sessions": 1214,
+      "activeUsers": 1054,
+      "conversions": 37,
+      "newUsers": 293,
+      "clicks": 219,
+      "impressions": 9036,
+      "ctr": 0.0242,
+      "avgPosition": 11.5,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-10": {
+      "sessions": 1189,
+      "activeUsers": 1031,
+      "conversions": 39,
+      "newUsers": 290,
+      "clicks": 207,
+      "impressions": 9070,
+      "ctr": 0.0228,
+      "avgPosition": 11.65,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-11": {
+      "sessions": 1148,
+      "activeUsers": 1002,
+      "conversions": 40,
+      "newUsers": 293,
+      "clicks": 207,
+      "impressions": 8949,
+      "ctr": 0.0231,
+      "avgPosition": 11.78,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-12": {
+      "sessions": 1151,
+      "activeUsers": 1003,
+      "conversions": 41,
+      "newUsers": 294,
+      "clicks": 213,
+      "impressions": 8735,
+      "ctr": 0.0244,
+      "avgPosition": 11.73,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-13": {
+      "sessions": 1174,
+      "activeUsers": 1028,
+      "conversions": 43,
+      "newUsers": 292,
+      "clicks": 209,
+      "impressions": 8692,
+      "ctr": 0.024,
+      "avgPosition": 12.22,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-14": {
+      "sessions": 1166,
+      "activeUsers": 1030,
+      "conversions": 41,
+      "newUsers": 293,
+      "clicks": 213,
+      "impressions": 8817,
+      "ctr": 0.0242,
+      "avgPosition": 12.37,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-15": {
+      "sessions": 1163,
+      "activeUsers": 1024,
+      "conversions": 41,
+      "newUsers": 301,
+      "clicks": 227,
+      "impressions": 8859,
+      "ctr": 0.0256,
+      "avgPosition": 12.25,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-16": {
+      "sessions": 1205,
+      "activeUsers": 1060,
+      "conversions": 40,
+      "newUsers": 310,
+      "clicks": 228,
+      "impressions": 8787,
+      "ctr": 0.0259,
+      "avgPosition": 12.47,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-17": {
+      "sessions": 1237,
+      "activeUsers": 1089,
+      "conversions": 37,
+      "newUsers": 313,
+      "clicks": 227,
+      "impressions": 8843,
+      "ctr": 0.0257,
+      "avgPosition": 12.16,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-18": {
+      "sessions": 1227,
+      "activeUsers": 1070,
+      "conversions": 39,
+      "newUsers": 308,
+      "clicks": 234,
+      "impressions": 9072,
+      "ctr": 0.0258,
+      "avgPosition": 11.8,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-19": {
+      "sessions": 1229,
+      "activeUsers": 1068,
+      "conversions": 39,
+      "newUsers": 304,
+      "clicks": 233,
+      "impressions": 9217,
+      "ctr": 0.0253,
+      "avgPosition": 11.87,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-20": {
+      "sessions": 1256,
+      "activeUsers": 1094,
+      "conversions": 39,
+      "newUsers": 303,
+      "clicks": 220,
+      "impressions": 9169,
+      "ctr": 0.024,
+      "avgPosition": 11.56,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-21": {
+      "sessions": 1246,
+      "activeUsers": 1081,
+      "conversions": 42,
+      "newUsers": 303,
+      "clicks": 219,
+      "impressions": 9145,
+      "ctr": 0.0239,
+      "avgPosition": 11.54,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-22": {
+      "sessions": 1203,
+      "activeUsers": 1047,
+      "conversions": 42,
+      "newUsers": 297,
+      "clicks": 218,
+      "impressions": 9263,
+      "ctr": 0.0235,
+      "avgPosition": 11.95,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-23": {
+      "sessions": 1191,
+      "activeUsers": 1046,
+      "conversions": 41,
+      "newUsers": 289,
+      "clicks": 207,
+      "impressions": 9313,
+      "ctr": 0.0222,
+      "avgPosition": 11.92,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-24": {
+      "sessions": 1197,
+      "activeUsers": 1050,
+      "conversions": 41,
+      "newUsers": 286,
+      "clicks": 205,
+      "impressions": 9145,
+      "ctr": 0.0224,
+      "avgPosition": 12.19,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-25": {
+      "sessions": 1167,
+      "activeUsers": 1027,
+      "conversions": 39,
+      "newUsers": 291,
+      "clicks": 214,
+      "impressions": 8956,
+      "ctr": 0.0239,
+      "avgPosition": 12.53,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-26": {
+      "sessions": 1138,
+      "activeUsers": 1007,
+      "conversions": 38,
+      "newUsers": 299,
+      "clicks": 213,
+      "impressions": 8944,
+      "ctr": 0.0238,
+      "avgPosition": 12.25,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-27": {
+      "sessions": 1158,
+      "activeUsers": 1016,
+      "conversions": 39,
+      "newUsers": 301,
+      "clicks": 215,
+      "impressions": 8962,
+      "ctr": 0.024,
+      "avgPosition": 12.26,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-28": {
+      "sessions": 1183,
+      "activeUsers": 1035,
+      "conversions": 38,
+      "newUsers": 301,
+      "clicks": 228,
+      "impressions": 8820,
+      "ctr": 0.0259,
+      "avgPosition": 12.17,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-29": {
+      "sessions": 1176,
+      "activeUsers": 1028,
+      "conversions": 41,
+      "newUsers": 305,
+      "clicks": 232,
+      "impressions": 8661,
+      "ctr": 0.0268,
+      "avgPosition": 11.66,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-06-30": {
+      "sessions": 1186,
+      "activeUsers": 1029,
+      "conversions": 41,
+      "newUsers": 311,
+      "clicks": 227,
+      "impressions": 8715,
+      "ctr": 0.026,
+      "avgPosition": 11.7,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-01": {
+      "sessions": 1231,
+      "activeUsers": 1068,
+      "conversions": 41,
+      "newUsers": 313,
+      "clicks": 232,
+      "impressions": 8883,
+      "ctr": 0.0261,
+      "avgPosition": 11.69,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-02": {
+      "sessions": 1250,
+      "activeUsers": 1091,
+      "conversions": 42,
+      "newUsers": 308,
+      "clicks": 232,
+      "impressions": 8918,
+      "ctr": 0.026,
+      "avgPosition": 11.54,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-03": {
+      "sessions": 1231,
+      "activeUsers": 1073,
+      "conversions": 40,
+      "newUsers": 299,
+      "clicks": 219,
+      "impressions": 8877,
+      "ctr": 0.0247,
+      "avgPosition": 12,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-04": {
+      "sessions": 1234,
+      "activeUsers": 1081,
+      "conversions": 39,
+      "newUsers": 294,
+      "clicks": 214,
+      "impressions": 8994,
+      "ctr": 0.0238,
+      "avgPosition": 12.18,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-05": {
+      "sessions": 1250,
+      "activeUsers": 1103,
+      "conversions": 39,
+      "newUsers": 295,
+      "clicks": 216,
+      "impressions": 9220,
+      "ctr": 0.0234,
+      "avgPosition": 12.17,
+      "signups": 38,
+      "signupsByProvider": {
+        "password": 16,
+        "google.com": 22
+      },
+      "deploys": []
+    },
+    "2026-07-06": {
+      "sessions": 1224,
+      "activeUsers": 1077,
+      "conversions": 25,
+      "newUsers": 294,
+      "clicks": 208,
+      "impressions": 9289,
+      "ctr": 0.0224,
+      "avgPosition": 12.53,
+      "signups": 15,
+      "signupsByProvider": {
+        "password": 6,
+        "google.com": 9
+      },
+      "deploys": [
+        {
+          "sha": "f3a9c21",
+          "at": "2026-07-06T09:14:00Z",
+          "source": "pr"
+        }
+      ]
+    },
+    "2026-07-07": {
+      "sessions": 1180,
+      "activeUsers": 1038,
+      "conversions": 22,
+      "newUsers": 290,
+      "clicks": 204,
+      "impressions": 9186,
+      "ctr": 0.0222,
+      "avgPosition": 12.33,
+      "signups": 9,
+      "signupsByProvider": {
+        "password": 4,
+        "google.com": 5
+      },
+      "deploys": []
+    }
+  }
+}

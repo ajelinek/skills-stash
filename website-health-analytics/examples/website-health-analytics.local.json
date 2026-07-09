@@ -1,0 +1,6 @@
+{
+  "googleApplicationCredentials": "/absolute/path/to/service-account.json",
+  "accountCorrelations": [
+    { "githubUsername": "alice", "firebaseUid": "abc123", "googleEmail": "alice@example.com", "displayName": "Alice" }
+  ]
+}

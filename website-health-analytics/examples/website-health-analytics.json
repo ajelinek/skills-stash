@@ -1,0 +1,20 @@
+{
+  "timezone": "America/New_York",
+  "sites": [
+    { "name": "prod", "gscSiteUrl": "https://example.com/", "ga4PropertyId": "properties/123456789" }
+  ],
+  "githubRepos": ["org/repo"],
+  "correlation": {
+    "windowHours": 48,
+    "bufferHours": 6,
+    "gscWindowDays": 10
+  },
+  "anomalyThresholds": {
+    "sessions":    { "method": "zscore",        "baselineDays": 28, "warn": 2.0,  "critical": 3.0 },
+    "conversions": { "method": "percentChange", "baselineDays": 7,  "warn": 0.15, "critical": 0.30 },
+    "signups":     { "method": "percentChange", "baselineDays": 7,  "warn": 0.15, "critical": 0.30 },
+    "clicks":      { "method": "zscore",        "baselineDays": 28, "warn": 2.0,  "critical": 3.0 },
+    "impressions": { "method": "zscore",        "baselineDays": 28, "warn": 2.0,  "critical": 3.0 },
+    "avgPosition": { "method": "absoluteDelta", "baselineDays": 28, "warn": 3,    "critical": 6 }
+  }
+}
