@@ -36,6 +36,7 @@ npx skills add ajelinek/skills-stash astro-seo
 npx skills add ajelinek/skills-stash cmux-workspace-builder
 npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 npx skills add ajelinek/skills-stash imessage
+npx skills add ajelinek/skills-stash cc-data-analyzer
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -50,6 +51,7 @@ npx skills add ajelinek/skills-stash imessage
 | `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 | `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
+| `cc-data-analyzer`             | Analyzes existing Claude chats/projects and recommends Skills to create, Project structure, chat groupings, descriptions, and files/folders — with an opt-in, gated offer to execute the plan via a browser tool |
 
 ---
 
