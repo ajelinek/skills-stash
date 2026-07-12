@@ -41,6 +41,17 @@ def address_book_sources_dir() -> str:
     )
 
 
+def trusted_contacts_path() -> str:
+    # Deliberately NOT trusted_contacts.example.json (the tracked, always-empty
+    # template committed to this public repo) — this is the real, per-user file,
+    # gitignored so a populated list can never end up in a commit by accident.
+    override = os.environ.get("IMESSAGE_TRUSTED_CONTACTS_PATH")
+    if override:
+        return override
+    skill_dir = Path(__file__).resolve().parent.parent
+    return str(skill_dir / "trusted_contacts.json")
+
+
 # --------------------------------------------------------------------------------
 # Date handling
 # --------------------------------------------------------------------------------
@@ -266,6 +277,7 @@ def _row_message_dict(
     chat_guid: str,
     handle_names: dict[str, Optional[str]],
     attachments_by_message: dict[int, list[str]],
+    trusted_contacts: list[dict[str, Any]],
 ) -> dict[str, Any]:
     handle = None
     if not row["is_from_me"] and row["handle_id"]:
@@ -283,6 +295,12 @@ def _row_message_dict(
         "date_iso": iso(apple_ns_to_dt(row["date"])),
         "sender_handle": handle,
         "sender_name": sender_name,
+        # None for your own messages (same convention as sender_handle) — trust is a
+        # property of an external sender, not applicable to yourself. True/False
+        # otherwise, from the trusted_contacts allow-list (see is_trusted_handle).
+        # This is a data signal only: this skill's own read/send behavior does not
+        # change based on it.
+        "sender_trusted": None if row["is_from_me"] else is_trusted_handle(handle, trusted_contacts),
         "is_from_me": bool(row["is_from_me"]),
         "text": text,
         "has_attachment": bool(row["cache_has_attachments"]),
@@ -475,6 +493,59 @@ def find_handles_by_name(address_book: dict[str, str], query: str) -> list[str]:
 
 
 # --------------------------------------------------------------------------------
+# Trusted contacts
+#
+# An explicit, user-maintained allow-list of handles. This skill only *exposes* the
+# signal (a `sender_trusted` field on message reads, plus list/add/remove/suggest
+# commands) — it does not change its own read/send behavior based on it. Deciding
+# what "trusted" is allowed to *do* (e.g. auto-acting on a trusted sender's message)
+# is a higher-level skill's job; see references/trusted-contacts.md.
+# --------------------------------------------------------------------------------
+
+def load_trusted_contacts() -> list[dict[str, Any]]:
+    path = trusted_contacts_path()
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+    contacts = data.get("trusted_contacts") if isinstance(data, dict) else None
+    return contacts if isinstance(contacts, list) else []
+
+
+def save_trusted_contacts(contacts: list[dict[str, Any]]) -> None:
+    path = trusted_contacts_path()
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"trusted_contacts": contacts}, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+
+def _trusted_handle_keys(handle: str) -> set[str]:
+    # Same loose matching load_address_book()/resolve_handle_to_name() use: a phone
+    # number can be stored/typed in several equivalent forms, so match on lowercase
+    # exact string OR last-10-digits, not on byte-for-byte equality.
+    keys = {handle.strip().lower()}
+    digits = _normalize_digits(handle)
+    if len(digits) >= 10:
+        keys.add(digits[-10:])
+    return keys
+
+
+def is_trusted_handle(handle: Optional[str], trusted_contacts: list[dict[str, Any]]) -> bool:
+    if not handle:
+        return False
+    handle_keys = _trusted_handle_keys(handle)
+    for entry in trusted_contacts:
+        entry_handle = entry.get("handle") or ""
+        if entry_handle and handle_keys & _trusted_handle_keys(entry_handle):
+            return True
+    return False
+
+
+# --------------------------------------------------------------------------------
 # Commands
 # --------------------------------------------------------------------------------
 
@@ -490,6 +561,7 @@ def cmd_doctor(args: argparse.Namespace) -> dict[str, Any]:
         "address_book_dir": address_book_sources_dir(),
         "address_book_found": False,
         "contact_count": 0,
+        "trusted_contact_count": 0,
         "warnings": [],
         "errors": [],
         "ok": False,
@@ -535,6 +607,18 @@ def cmd_doctor(args: argparse.Namespace) -> dict[str, Any]:
         result["warnings"].append(
             "No AddressBook database found — contact names won't resolve, only raw handles. "
             "This is optional; grant Contacts/Full Disk Access if you want name resolution."
+        )
+
+    trusted_contacts = load_trusted_contacts()
+    result["trusted_contact_count"] = len(trusted_contacts)
+    if result["chat_db_readable"] and not trusted_contacts:
+        result["warnings"].append(
+            "No trusted contacts configured yet. This is optional and doesn't change "
+            "anything this skill does on its own — it's a signal (`sender_trusted` on "
+            "messages) that higher-level skills built on top of this one can use to decide "
+            "which senders' messages may trigger automated actions. Consider running "
+            "`trusted-suggest` to see frequently-contacted people, and ask the user if "
+            "they'd like to add any via `trusted-add`."
         )
 
     result["ok"] = result["chat_db_readable"] and result["message_count"] not in (None, 0)
@@ -591,6 +675,7 @@ def _messages_for_chat(
     conn: sqlite3.Connection,
     chat_row: sqlite3.Row,
     address_book: dict[str, str],
+    trusted_contacts: list[dict[str, Any]],
     since: Optional[datetime],
     until: Optional[datetime],
     limit: int,
@@ -627,13 +712,16 @@ def _messages_for_chat(
     ).fetchall()
 
     attachments = _attachments_for_messages(conn, [r["rowid"] for r in rows])
-    messages = [_row_message_dict(conn, r, chat_row["guid"], address_book, attachments) for r in rows]
+    messages = [
+        _row_message_dict(conn, r, chat_row["guid"], address_book, attachments, trusted_contacts) for r in rows
+    ]
     return messages, total
 
 
 def cmd_messages(args: argparse.Namespace) -> dict[str, Any]:
     conn = open_db()
     address_book = load_address_book()
+    trusted_contacts = load_trusted_contacts()
 
     chat_row = conn.execute(
         "SELECT ROWID as rowid, guid, display_name FROM chat WHERE guid = ?", (args.chat_guid,)
@@ -645,7 +733,8 @@ def cmd_messages(args: argparse.Namespace) -> dict[str, Any]:
     since = parse_when(args.since) if args.since else None
     until = until_boundary(args.until) if args.until else None
     messages, total = _messages_for_chat(
-        conn, chat_row, address_book, since, until, args.limit, args.offset, args.include_reactions
+        conn, chat_row, address_book, trusted_contacts, since, until,
+        args.limit, args.offset, args.include_reactions,
     )
     conn.close()
     return {
@@ -660,6 +749,7 @@ def cmd_messages(args: argparse.Namespace) -> dict[str, Any]:
 def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
     conn = open_db()
     address_book = load_address_book()
+    trusted_contacts = load_trusted_contacts()
 
     since = parse_when(args.since) if args.since else parse_when("7 days ago")
     until = until_boundary(args.until) if args.until else None
@@ -712,7 +802,9 @@ def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
                 "messages": [],
             }
             grouped[r["chat_id"]] = bucket
-        bucket["messages"].append(_row_message_dict(conn, r, chat_row["guid"], address_book, attachments))
+        bucket["messages"].append(
+            _row_message_dict(conn, r, chat_row["guid"], address_book, attachments, trusted_contacts)
+        )
 
     # rows came back newest-first (see the ORDER BY above); flip each chat's
     # messages back to chronological order for readability.
@@ -733,6 +825,7 @@ def cmd_recent(args: argparse.Namespace) -> dict[str, Any]:
 def cmd_search(args: argparse.Namespace) -> dict[str, Any]:
     conn = open_db()
     address_book = load_address_book()
+    trusted_contacts = load_trusted_contacts()
 
     base_where = [REACTION_FILTER_SQL if not args.include_reactions else "1=1"]
     params: list[Any] = []
@@ -804,7 +897,8 @@ def cmd_search(args: argparse.Namespace) -> dict[str, Any]:
 
     attachments = _attachments_for_messages(conn, [r["rowid"] for r in rows])
     results = [
-        _row_message_dict(conn, r, chat_guids.get(r["chat_id"], ""), address_book, attachments) for r in rows
+        _row_message_dict(conn, r, chat_guids.get(r["chat_id"], ""), address_book, attachments, trusted_contacts)
+        for r in rows
     ]
     conn.close()
     return {"query": args.query, "handle": args.handle, "results": results, "count": len(results)}
@@ -912,6 +1006,83 @@ def cmd_resolve_chat(args: argparse.Namespace) -> dict[str, Any]:
         return _resolve_chat(conn, address_book, args.handle)
     finally:
         conn.close()
+
+
+# --------------------------------------------------------------------------------
+# Trusted contacts commands
+# --------------------------------------------------------------------------------
+
+def cmd_trusted_list(args: argparse.Namespace) -> dict[str, Any]:
+    contacts = load_trusted_contacts()
+    return {"trusted_contacts": contacts, "count": len(contacts), "path": trusted_contacts_path()}
+
+
+def cmd_trusted_add(args: argparse.Namespace) -> dict[str, Any]:
+    handle = args.handle.strip()
+    if not handle:
+        raise ValueError("--handle must not be empty.")
+    contacts = load_trusted_contacts()
+    if is_trusted_handle(handle, contacts):
+        raise ValueError(f"{handle!r} is already in the trusted contacts list.")
+    entry = {"handle": handle, "name": args.name, "note": args.note}
+    contacts.append(entry)
+    save_trusted_contacts(contacts)
+    return {"added": entry, "trusted_contacts": contacts, "count": len(contacts)}
+
+
+def cmd_trusted_remove(args: argparse.Namespace) -> dict[str, Any]:
+    handle = args.handle.strip()
+    contacts = load_trusted_contacts()
+    handle_keys = _trusted_handle_keys(handle)
+    remaining = [c for c in contacts if not (handle_keys & _trusted_handle_keys(c.get("handle") or ""))]
+    removed = len(contacts) - len(remaining)
+    if removed == 0:
+        raise ValueError(f"{handle!r} was not found in the trusted contacts list.")
+    save_trusted_contacts(remaining)
+    return {"removed_count": removed, "trusted_contacts": remaining, "count": len(remaining)}
+
+
+def cmd_trusted_suggest(args: argparse.Namespace) -> dict[str, Any]:
+    """Rank people the user has actually exchanged messages with by message count, for
+    the caller to present as onboarding candidates — this never adds anyone itself."""
+    conn = open_db()
+    address_book = load_address_book()
+    trusted_contacts = load_trusted_contacts()
+
+    where = ["m.is_from_me = 0", "h.id IS NOT NULL", REACTION_FILTER_SQL]
+    params: list[Any] = []
+    if args.since:
+        where.append("m.date >= ?")
+        params.append(dt_to_apple_ns(parse_when(args.since)))
+    where_sql = " AND ".join(where)
+
+    rows = conn.execute(
+        f"""
+        SELECT h.id as handle, COUNT(*) as message_count, MAX(m.date) as last_date
+        FROM message m
+        JOIN handle h ON h.ROWID = m.handle_id
+        WHERE {where_sql}
+        GROUP BY h.id
+        ORDER BY message_count DESC
+        """,
+        params,
+    ).fetchall()
+    conn.close()
+
+    candidates = []
+    for r in rows:
+        if is_trusted_handle(r["handle"], trusted_contacts):
+            continue
+        candidates.append({
+            "handle": r["handle"],
+            "name": resolve_handle_to_name(address_book, r["handle"]),
+            "message_count": r["message_count"],
+            "last_message_date": iso(apple_ns_to_dt(r["last_date"])),
+        })
+        if len(candidates) >= args.limit:
+            break
+
+    return {"candidates": candidates, "count": len(candidates), "since": args.since}
 
 
 # --------------------------------------------------------------------------------
@@ -1033,6 +1204,28 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("resolve-chat", help="Resolve a handle or contact name to a chat_guid.")
     p.add_argument("--handle", required=True)
     p.set_defaults(func=cmd_resolve_chat)
+
+    p = sub.add_parser("trusted-list", help="List handles on the trusted contacts allow-list.")
+    p.set_defaults(func=cmd_trusted_list)
+
+    p = sub.add_parser("trusted-add", help="Add a handle to the trusted contacts allow-list.")
+    p.add_argument("--handle", required=True, help="Phone number or email, as it appears in chat.db/AddressBook.")
+    p.add_argument("--name", help="Display name, for readability in the trusted-contacts file only.")
+    p.add_argument("--note", help="Optional freeform note (e.g. why they're trusted).")
+    p.set_defaults(func=cmd_trusted_add)
+
+    p = sub.add_parser("trusted-remove", help="Remove a handle from the trusted contacts allow-list.")
+    p.add_argument("--handle", required=True)
+    p.set_defaults(func=cmd_trusted_remove)
+
+    p = sub.add_parser(
+        "trusted-suggest",
+        help="Rank people you've actually exchanged messages with, excluding those already trusted — "
+             "for onboarding, not auto-added.",
+    )
+    p.add_argument("--since", help="Only count messages since this date (default: all local history).")
+    p.add_argument("--limit", type=int, default=10)
+    p.set_defaults(func=cmd_trusted_suggest)
 
     p = sub.add_parser("send", help="Send a text message to an existing chat (1:1 or group) via Messages.app.")
     target = p.add_mutually_exclusive_group(required=True)
