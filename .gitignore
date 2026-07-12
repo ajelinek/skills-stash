@@ -3,3 +3,6 @@
 
 # Archives
 *.zip
+
+# Build outputs
+dist/

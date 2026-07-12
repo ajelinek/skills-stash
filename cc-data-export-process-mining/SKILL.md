@@ -1,5 +1,5 @@
 ---
-name: process-mining
+name: CC Data Export Process Mining
 description: Mines a Claude.ai/Cowork data export (conversations.json, memories.json, projects/*.json from Settings > Account > Export Data) to find recurring real-world workflows the user keeps doing by hand across conversations, then recommends specific Cowork skills to build and scheduled tasks to automate. Use this whenever the user wants to analyze their Claude conversation history, export, or usage to figure out what should be turned into a skill or a recurring/scheduled task -- phrases like "what should I automate", "what skills should I build", "audit my Claude usage", "process management", "find patterns in my conversations", or when they hand over a data export folder (containing conversations.json) and ask what to do with it. Requires an actual Claude data export folder as input -- if the user hasn't provided or pointed to one, ask for it before proceeding rather than guessing.
 ---
 
@@ -144,6 +144,7 @@ Write the report as markdown. Use this structure:
 # Process Mining Report: [account/export identifier or date range]
 
 ## Overview
+
 - Conversations analyzed: N (date range: X to Y)
 - Projects: N
 - Data quality notes: [thin export / short date range / no memory_context / etc, or "none"]
@@ -151,20 +152,24 @@ Write the report as markdown. Use this structure:
 ## Recurring Workflows Found
 
 ### 1. [Workflow name]
+
 **Evidence:** [conversation names + dates, at least 2]
 **Pattern:** [what the user keeps doing, in their own domain terms]
 **Recommendation:** [Skill | Scheduled task | Both]
+
 - If skill: suggested name, one-line trigger description, what varies input-to-input
 - If schedule: suggested cadence, what the task prompt would say
-**Why this and not the other:** [one sentence -- ties back to Step 4's reasoning]
+  **Why this and not the other:** [one sentence -- ties back to Step 4's reasoning]
 
 [repeat per cluster, ranked with strongest evidence first]
 
 ## Quick Wins
+
 Top 2-3 recommendations to act on first, and why those specifically (strongest
 evidence, lowest effort to set up, or highest recurring cost of doing it manually).
 
 ## Noted but not recommended
+
 Recurring topics that showed up repeatedly but aren't workflow candidates (exploration,
 learning, one-off troubleshooting of the same recurring issue) -- worth naming so the
 user knows they were seen, without inflating the recommendation list.
