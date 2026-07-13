@@ -13,6 +13,8 @@ For everything else, install from the public catalog at [skills.sh](https://skil
 
 To interactively pick and choose skills from a repo, run `npx skills add <repo>` — it will present a multi-select list of everything available. To install a single specific skill, append the skill name.
 
+Prefer a plain download? Every tagged release on the [Releases page](../../releases) has a `.zip` for each skill in this repo, plus an `all-skills.zip` bundling all of them together — handy for uploading straight into Claude.
+
 ---
 
 ### `ajelinek/skills-stash`
