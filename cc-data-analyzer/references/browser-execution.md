@@ -1,6 +1,7 @@
 # Executing the plan via a browser tool
 
-This only applies once the user has approved Path B in the main skill file.
+This only applies once the user has approved executing the reorganization
+plan in the main skill file's Step 5.
 It is deliberately light on exact click-paths — the Claude.ai UI changes, and
 hard-coded selectors go stale. Drive it by reading the live page, not by
 recalling a fixed layout from training data.
@@ -36,7 +37,7 @@ assuming a specific menu structure.
 
 - Never take an action outside the approved plan (e.g. don't rename a
   Project the user didn't ask you to touch, don't archive/delete anything —
-  Path B only creates/moves/labels, per the main skill file's non-goals).
+  this step only creates/moves/labels, per the main skill file's non-goals).
 - If mid-execution the user wants to change the plan, stop, confirm the
   change verbally/in-chat first, then resume — don't silently adapt.
 - At the end, give a final summary of everything actually done, and call out

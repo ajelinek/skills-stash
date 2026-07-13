@@ -38,7 +38,6 @@ npx skills add ajelinek/skills-stash astro-seo
 npx skills add ajelinek/skills-stash cmux-workspace-builder
 npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 npx skills add ajelinek/skills-stash imessage
-npx skills add ajelinek/skills-stash process-mining
 npx skills add ajelinek/skills-stash cc-data-analyzer
 ```
 
@@ -54,8 +53,7 @@ npx skills add ajelinek/skills-stash cc-data-analyzer
 | `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 | `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
-| `process-mining`               | Mines a Claude.ai/Cowork data export to find recurring real-world workflows and recommend which ones should become skills vs. scheduled tasks |
-| `cc-data-analyzer`             | Analyzes existing Claude chats/projects and recommends Skills to create, Project structure, chat groupings, descriptions, and files/folders — with an opt-in, gated offer to execute the plan via a browser tool |
+| `cc-data-analyzer`             | Mines a Claude.ai/Cowork data export two ways: a workspace reorganization plan (Projects, chat groupings, file/folder structure — with an opt-in, gated offer to execute it via a browser tool) or an automation report (recurring workflows recommended as Skills vs. scheduled tasks, with evidence) |
 
 ---
 
