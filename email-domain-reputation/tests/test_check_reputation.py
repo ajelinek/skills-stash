@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Tests for check_reputation.py's pure fetch/normalize/merge logic.
 
-No real network calls -- requests.get is mocked throughout, so this suite runs
+No real network calls -- _http_get is mocked throughout, so this suite runs
 offline and never spends the (rate-limited, free-tier) API quota.
 """
 import importlib.util
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -17,15 +18,6 @@ spec = importlib.util.spec_from_file_location("check_reputation", SCRIPT_PATH)
 check_reputation = importlib.util.module_from_spec(spec)
 sys.modules["check_reputation"] = check_reputation
 spec.loader.exec_module(check_reputation)
-
-
-class FakeResponse:
-    def __init__(self, status_code=200, json_data=None):
-        self.status_code = status_code
-        self._json_data = json_data if json_data is not None else {}
-
-    def json(self):
-        return self._json_data
 
 
 class EmailValidationTests(unittest.TestCase):
@@ -67,46 +59,68 @@ class MissingEnvVarsTests(unittest.TestCase):
         self.assertEqual(check_reputation.missing_env_vars(env), ["EMAILREP_API_KEY"])
 
 
+class EnvFileFallbackTests(unittest.TestCase):
+    def test_missing_file_returns_empty(self):
+        self.assertEqual(check_reputation.load_env_file("/nonexistent/.env"), {})
+
+    def test_parses_key_value_lines_and_skips_comments(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
+            f.write("# comment\nEMAILREP_API_KEY=abc123\n\nEMAILREP_USER_AGENT=\"my-agent\"\n")
+            path = f.name
+        try:
+            values = check_reputation.load_env_file(path)
+            self.assertEqual(values["EMAILREP_API_KEY"], "abc123")
+            self.assertEqual(values["EMAILREP_USER_AGENT"], "my-agent")
+        finally:
+            Path(path).unlink()
+
+    def test_real_env_vars_win_over_file_fallback(self):
+        env = {"EMAILREP_API_KEY": "real-value"}
+        check_reputation.apply_env_file_fallback(env, {"EMAILREP_API_KEY": "file-value", "ABSTRACTAPI_API_KEY": "k2"})
+        self.assertEqual(env["EMAILREP_API_KEY"], "real-value")
+        self.assertEqual(env["ABSTRACTAPI_API_KEY"], "k2")
+
+
 class FetchEmailRepTests(unittest.TestCase):
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_success(self, mock_get):
-        mock_get.return_value = FakeResponse(200, {"reputation": "high", "details": {}})
+        mock_get.return_value = (200, json.dumps({"reputation": "high", "details": {}}).encode())
         result = check_reputation.fetch_emailrep("a@b.com", "key", "ua")
         self.assertTrue(result["ok"])
         self.assertEqual(result["raw"]["reputation"], "high")
 
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_401_reported_as_invalid_key(self, mock_get):
-        mock_get.return_value = FakeResponse(401)
+        mock_get.return_value = (401, b"")
         result = check_reputation.fetch_emailrep("a@b.com", "bad-key", "ua")
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"], "invalid_api_key")
         self.assertEqual(result["status_code"], 401)
 
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_429_reported_as_rate_limited(self, mock_get):
-        mock_get.return_value = FakeResponse(429)
+        mock_get.return_value = (429, b"")
         result = check_reputation.fetch_emailrep("a@b.com", "key", "ua")
         self.assertEqual(result["error"], "rate_limited")
 
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_timeout(self, mock_get):
-        mock_get.side_effect = check_reputation.requests.exceptions.Timeout()
+        mock_get.side_effect = TimeoutError("timed out")
         result = check_reputation.fetch_emailrep("a@b.com", "key", "ua")
         self.assertEqual(result["error"], "timeout")
         self.assertFalse(result["ok"])
 
 
 class FetchAbstractApiTests(unittest.TestCase):
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_success(self, mock_get):
-        mock_get.return_value = FakeResponse(200, {"quality_score": "0.8"})
+        mock_get.return_value = (200, json.dumps({"quality_score": "0.8"}).encode())
         result = check_reputation.fetch_abstractapi("a@b.com", "key")
         self.assertTrue(result["ok"])
 
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_network_error(self, mock_get):
-        mock_get.side_effect = check_reputation.requests.exceptions.ConnectionError("boom")
+        mock_get.side_effect = OSError("boom")
         result = check_reputation.fetch_abstractapi("a@b.com", "key")
         self.assertEqual(result["error"], "network_error")
 
@@ -218,8 +232,9 @@ class BuildOutputTests(unittest.TestCase):
 
 class MainTests(unittest.TestCase):
     @patch.dict("os.environ", {}, clear=True)
+    @patch("check_reputation.ENV_FILE_PATH", "/nonexistent/.env")
     def test_missing_env_vars_exits_nonzero_before_any_call(self):
-        with patch("check_reputation.requests.get") as mock_get:
+        with patch("check_reputation._http_get") as mock_get:
             exit_code = check_reputation.main(["a@b.com"])
             mock_get.assert_not_called()
         self.assertEqual(exit_code, 1)
@@ -230,7 +245,7 @@ class MainTests(unittest.TestCase):
         clear=True,
     )
     def test_invalid_email_exits_nonzero_before_any_call(self):
-        with patch("check_reputation.requests.get") as mock_get:
+        with patch("check_reputation._http_get") as mock_get:
             exit_code = check_reputation.main(["not-an-email"])
             mock_get.assert_not_called()
         self.assertEqual(exit_code, 1)
@@ -240,11 +255,25 @@ class MainTests(unittest.TestCase):
         {"EMAILREP_API_KEY": "k1", "EMAILREP_USER_AGENT": "ua", "ABSTRACTAPI_API_KEY": "k2"},
         clear=True,
     )
-    @patch("check_reputation.requests.get")
+    @patch("check_reputation._http_get")
     def test_happy_path_exits_zero(self, mock_get):
-        mock_get.return_value = FakeResponse(200, {"reputation": "high", "details": {}})
+        mock_get.return_value = (200, json.dumps({"reputation": "high", "details": {}}).encode())
         exit_code = check_reputation.main(["person@example.com"])
         self.assertEqual(exit_code, 0)
+
+    @patch.dict("os.environ", {"ABSTRACTAPI_API_KEY": "k2"}, clear=True)
+    @patch("check_reputation._http_get")
+    def test_env_file_fills_in_only_missing_vars(self, mock_get):
+        mock_get.return_value = (200, json.dumps({"reputation": "high", "details": {}}).encode())
+        with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
+            f.write("EMAILREP_API_KEY=file-key\nEMAILREP_USER_AGENT=file-ua\n")
+            path = f.name
+        try:
+            with patch("check_reputation.ENV_FILE_PATH", path):
+                exit_code = check_reputation.main(["person@example.com"])
+            self.assertEqual(exit_code, 0)
+        finally:
+            Path(path).unlink()
 
 
 if __name__ == "__main__":

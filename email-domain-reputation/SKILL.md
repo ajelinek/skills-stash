@@ -6,59 +6,70 @@ description: >
   producing a plain-English Trust / Caution / Block verdict with the
   specific signals that drove it. Trigger on requests like "check the
   reputation of this email", "is this sender legit", "is this email safe",
-  "verify this domain", or "audit my domain's SPF/DMARC setup". Runs as a
-  Dockerized CLI so no local Python dependencies are needed and API keys
-  never enter this session's context. Requires a one-time `.env` setup
-  (see below) before first use — low-volume only (~250 EmailRep
-  queries/month on the free tier), not a bulk-screening tool.
+  "verify this domain", or "audit my domain's SPF/DMARC setup". The fetch
+  script is stdlib-only Python (no pip install, no container) — low-volume
+  only (~250 EmailRep queries/month on the free tier), not a bulk-screening
+  tool. Requires a one-time API key setup (see below) before first use.
 ---
 
 # Email/Domain Reputation Check
 
-Fetches signals from two APIs, merges them into one JSON object, and hands
-that JSON to you (Claude) to interpret against a fixed rubric — judgment
-lives here in the skill instructions, not hardcoded in the script, so the
-rubric can be tuned without touching code.
+A single stdlib-only Python script fetches signals from two APIs and merges
+them into one JSON object; you (Claude) interpret that JSON against a fixed
+rubric. Judgment lives in this skill's instructions, not hardcoded in the
+script, so the rubric can be tuned without touching code.
 
 ```
-you → docker compose run --rm reputation-check <email>
-        → scripts/check_reputation.py
-            → EmailRep API   (needs EMAILREP_API_KEY, EMAILREP_USER_AGENT)
-            → Abstract API   (needs ABSTRACTAPI_API_KEY)
+you → python3 scripts/check_reputation.py <email>
+        → EmailRep API   (needs EMAILREP_API_KEY, EMAILREP_USER_AGENT)
+        → Abstract API   (needs ABSTRACTAPI_API_KEY)
         → merged JSON on stdout
     → you apply references/interpretation-rules.md, reply in plain English
 ```
 
-## One-time setup
+## API keys to get (one-time)
 
-1. `cd` into this skill's own directory (the one containing this SKILL.md).
-2. Copy `.env.example` to `.env` and fill in real values:
-   - `EMAILREP_API_KEY` — from https://emailrep.io (free tier: 250
-     queries/month, 10/day on a rolling 24h window)
-   - `EMAILREP_USER_AGENT` — any stable identifying string
-   - `ABSTRACTAPI_API_KEY` — from
-     https://www.abstractapi.com/api/email-verification-validation-api
-3. Never put real key values anywhere except `.env`. `.env` is gitignored;
-   `.claude/settings.json` in this directory denies `Read(./.env)` so this
-   session can't load the raw keys into its own context either — that deny
-   rule is the actual control here, not a nice-to-have, since Claude Code
-   will otherwise auto-load `.env` files it encounters.
-4. Keys are read only from the environment (via Compose's `env_file`) —
-   never pass a key as a CLI argument, which would leak it into shell
-   history and the process list.
+Two free accounts, three values total:
 
-If `.env` doesn't exist yet, tell the user to create it from `.env.example`
-and stop — don't try to guess or fabricate key values.
+| Variable | Where to get it |
+|---|---|
+| `EMAILREP_API_KEY` | https://emailrep.io — free tier: 250 queries/month, 10/day (rolling 24h window) |
+| `EMAILREP_USER_AGENT` | Not a real credential — any stable identifying string works, e.g. `your-name-reputation-check` |
+| `ABSTRACTAPI_API_KEY` | https://www.abstractapi.com/api/email-verification-validation-api |
+
+## Where to put them
+
+The script reads from the real environment first, and only falls back to a
+local `.env` file (next to this SKILL.md) for whichever variables aren't
+already set — so pick whichever of these matches how you're running Claude:
+
+- **Claude Code on the web / a cloud session (like this one):** set them as
+  real environment variables in the environment's own settings (Environment
+  Variables, in that environment's configuration) rather than a file. They
+  get injected directly into `os.environ` for every session in that
+  environment — there's no file for Claude to accidentally read in the
+  first place.
+- **Claude Code CLI or Desktop on your own machine:** copy `.env.example` to
+  `.env` in this skill's directory and fill in real values. `.env` is
+  gitignored, and this directory's `.claude/settings.json` denies
+  `Read(./.env)` — so even on a local machine, Claude Code can't load the
+  raw keys into its own context. That deny rule is the actual control here,
+  not a nice-to-have: Claude Code will otherwise auto-load `.env` files it
+  encounters.
+
+Either way: never pass a key as a CLI argument — that would leak it into
+shell history and the process list. If neither a real env var nor `.env`
+supplies a required value, tell the user which one is missing and point
+them at this section rather than guessing.
 
 ## Running a check
 
-From this skill's directory:
-
 ```bash
-docker compose run --rm reputation-check <email>
+python3 scripts/check_reputation.py <email>
 ```
 
-This prints exactly one JSON object to stdout — parse it, don't eyeball raw
+No install step — the script only uses Python's standard library. It
+prints exactly one JSON object to stdout — parse it, don't eyeball raw
 output as the final answer. Every field the rubric needs lives under
 `signals`; `sources.emailrep`/`sources.abstractapi` report whether each API
 call actually succeeded; `partial: true` means one of them failed and the
@@ -71,7 +82,7 @@ and apply it to the JSON's `signals` object. It defines, in priority order:
 
 1. When there's not enough data to judge at all.
 2. Block-level signals (any one → Block).
-3. Caution-level signals (any one → Block having already been ruled out).
+3. Caution-level signals (any one → Caution, having already ruled out Block).
 4. Trust-supporting signals (used to affirmatively call it Trust).
 5. The own-domain SPF/DMARC audit add-on — only relevant when the target
    *is* the requester's own domain (ask if it's ambiguous which case this
@@ -86,8 +97,8 @@ domain is 4 days old and uses a disposable-email provider" is useful,
 The script fails fast, before any network call, on:
 
 - **Missing env var(s)** — exits non-zero with a `fatal_error` JSON naming
-  which variable(s) are unset. Tell the user which one(s), point at
-  `.env.example`, and stop.
+  which variable(s) are unset. Tell the user which one(s) and point them at
+  "Where to put them" above, then stop.
 - **Invalid email format** — exits non-zero with a `fatal_error` JSON. Don't
   retry with a guessed correction; ask the user to confirm the address.
 

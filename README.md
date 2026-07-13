@@ -55,7 +55,7 @@ npx skills add ajelinek/skills-stash email-domain-reputation
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 | `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
 | `cc-data-analyzer`             | Mines a Claude.ai/Cowork data export two ways: a workspace reorganization plan (Projects, chat groupings, file/folder structure — with an opt-in, gated offer to execute it via a browser tool) or an automation report (recurring workflows recommended as Skills vs. scheduled tasks, with evidence) |
-| `email-domain-reputation`      | Checks an email/domain's reputation via EmailRep + Abstract API Email Validation (Dockerized CLI, keys never touch git or Claude's context), merges the results, and returns a Trust/Caution/Block verdict — plus an SPF/DMARC audit when the target is your own domain |
+| `email-domain-reputation`      | Checks an email/domain's reputation via EmailRep + Abstract API Email Validation (stdlib-only Python, no install; keys never touch git or Claude's context), merges the results, and returns a Trust/Caution/Block verdict — plus an SPF/DMARC audit when the target is your own domain |
 
 ---
 

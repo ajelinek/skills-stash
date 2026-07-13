@@ -1,5 +1,0 @@
-services:
-  reputation-check:
-    build: .
-    env_file:
-      - .env

@@ -4,6 +4,8 @@ check_reputation.py -- Fetch + merge email/domain reputation signals from
 EmailRep (emailrep.io) and Abstract API Email Validation into one normalized
 JSON object on stdout.
 
+Stdlib only -- no pip install, no venv, no container needed to run this.
+
 Fetch and normalization only -- no trust/caution/block verdict is computed
 here. That judgment is deliberately left to the caller (see
 ../references/interpretation-rules.md) so the rubric can be tuned without
@@ -12,12 +14,15 @@ touching this script.
 Usage:
     python3 check_reputation.py <email>
 
-Required environment variables (never accepted as CLI args -- keeping keys
-out of shell history and process listings is the whole point of routing
-them through Docker Compose's env_file instead):
+Required, read from the real environment first:
     EMAILREP_API_KEY
     EMAILREP_USER_AGENT
     ABSTRACTAPI_API_KEY
+If any are missing from os.environ, a `.env` file next to this skill's
+SKILL.md (KEY=value per line) is used to fill in only the missing ones --
+real environment variables (e.g. injected by a cloud dev environment) always
+win over the file. Keys are never accepted as CLI args, to keep them out of
+shell history and process listings.
 
 Exit codes:
     0 -- ran to completion; stdout is the merged JSON. A source-level error
@@ -31,10 +36,11 @@ import argparse
 import json
 import os
 import re
+import socket
 import sys
-from urllib.parse import quote
-
-import requests
+import urllib.error
+import urllib.parse
+import urllib.request
 
 EMAILREP_URL_TMPL = "https://emailrep.io/{email}"
 ABSTRACTAPI_URL = "https://emailvalidation.abstractapi.com/v1/"
@@ -43,6 +49,30 @@ REQUEST_TIMEOUT_SECONDS = 10
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 REQUIRED_ENV_VARS = ("EMAILREP_API_KEY", "EMAILREP_USER_AGENT", "ABSTRACTAPI_API_KEY")
+
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ENV_FILE_PATH = os.path.join(SKILL_DIR, ".env")
+
+
+def load_env_file(path):
+    """Parse a simple KEY=value .env file. Returns {} if it doesn't exist."""
+    if not os.path.isfile(path):
+        return {}
+    values = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def apply_env_file_fallback(env, file_values):
+    """Fill in only the keys `env` doesn't already have -- real env vars win."""
+    for key, value in file_values.items():
+        env.setdefault(key, value)
 
 
 def is_valid_email(email):
@@ -61,25 +91,43 @@ def _error_result(kind, detail=None, status_code=None):
     return {"ok": False, "error": kind, "detail": detail, "status_code": status_code, "raw": None}
 
 
+def _http_get(url, headers, timeout):
+    """Returns (status_code, raw_bytes) for any HTTP response, including
+    4xx/5xx. Raises TimeoutError for timeouts, OSError for other network
+    failures (DNS, connection refused, etc.)."""
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read()
+    except (socket.timeout, TimeoutError) as exc:
+        raise TimeoutError(str(exc)) from exc
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, (socket.timeout, TimeoutError)):
+            raise TimeoutError(str(exc.reason)) from exc
+        raise OSError(str(exc.reason)) from exc
+
+
 def fetch_emailrep(email, api_key, user_agent, timeout=REQUEST_TIMEOUT_SECONDS):
-    url = EMAILREP_URL_TMPL.format(email=quote(email, safe=""))
+    url = EMAILREP_URL_TMPL.format(email=urllib.parse.quote(email, safe=""))
     headers = {"Key": api_key, "User-Agent": user_agent, "Accept": "application/json"}
     try:
-        resp = requests.get(url, headers=headers, timeout=timeout)
-    except requests.exceptions.Timeout:
+        status, body = _http_get(url, headers, timeout)
+    except TimeoutError:
         return _error_result("timeout", "EmailRep request timed out")
-    except requests.exceptions.RequestException as exc:
+    except OSError as exc:
         return _error_result("network_error", str(exc))
 
-    if resp.status_code == 401:
+    if status == 401:
         return _error_result("invalid_api_key", "EmailRep rejected the API key (401)", 401)
-    if resp.status_code == 429:
+    if status == 429:
         return _error_result("rate_limited", "EmailRep rate limit hit (429)", 429)
-    if resp.status_code != 200:
-        return _error_result("http_error", f"EmailRep returned HTTP {resp.status_code}", resp.status_code)
+    if status != 200:
+        return _error_result("http_error", f"EmailRep returned HTTP {status}", status)
 
     try:
-        data = resp.json()
+        data = json.loads(body)
     except ValueError:
         return _error_result("invalid_response", "EmailRep response was not valid JSON")
 
@@ -87,23 +135,24 @@ def fetch_emailrep(email, api_key, user_agent, timeout=REQUEST_TIMEOUT_SECONDS):
 
 
 def fetch_abstractapi(email, api_key, timeout=REQUEST_TIMEOUT_SECONDS):
-    params = {"api_key": api_key, "email": email}
+    query = urllib.parse.urlencode({"api_key": api_key, "email": email})
+    url = f"{ABSTRACTAPI_URL}?{query}"
     try:
-        resp = requests.get(ABSTRACTAPI_URL, params=params, timeout=timeout)
-    except requests.exceptions.Timeout:
+        status, body = _http_get(url, {}, timeout)
+    except TimeoutError:
         return _error_result("timeout", "Abstract API request timed out")
-    except requests.exceptions.RequestException as exc:
+    except OSError as exc:
         return _error_result("network_error", str(exc))
 
-    if resp.status_code == 401:
+    if status == 401:
         return _error_result("invalid_api_key", "Abstract API rejected the API key (401)", 401)
-    if resp.status_code == 429:
+    if status == 429:
         return _error_result("rate_limited", "Abstract API rate limit hit (429)", 429)
-    if resp.status_code != 200:
-        return _error_result("http_error", f"Abstract API returned HTTP {resp.status_code}", resp.status_code)
+    if status != 200:
+        return _error_result("http_error", f"Abstract API returned HTTP {status}", status)
 
     try:
-        data = resp.json()
+        data = json.loads(body)
     except ValueError:
         return _error_result("invalid_response", "Abstract API response was not valid JSON")
 
@@ -245,7 +294,10 @@ def main(argv=None):
     parser.add_argument("email", help="Email address to check")
     args = parser.parse_args(argv)
 
-    missing = missing_env_vars(os.environ)
+    env = dict(os.environ)
+    apply_env_file_fallback(env, load_env_file(ENV_FILE_PATH))
+
+    missing = missing_env_vars(env)
     if missing:
         print(json.dumps({"fatal_error": "missing_env_vars", "missing": missing}))
         return 1
@@ -254,10 +306,8 @@ def main(argv=None):
         print(json.dumps({"fatal_error": "invalid_email", "email": args.email}))
         return 1
 
-    emailrep_result = fetch_emailrep(
-        args.email, os.environ["EMAILREP_API_KEY"], os.environ["EMAILREP_USER_AGENT"]
-    )
-    abstract_result = fetch_abstractapi(args.email, os.environ["ABSTRACTAPI_API_KEY"])
+    emailrep_result = fetch_emailrep(args.email, env["EMAILREP_API_KEY"], env["EMAILREP_USER_AGENT"])
+    abstract_result = fetch_abstractapi(args.email, env["ABSTRACTAPI_API_KEY"])
 
     print(json.dumps(build_output(args.email, emailrep_result, abstract_result), indent=2))
     return 0
