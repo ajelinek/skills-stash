@@ -1,0 +1,5 @@
+# Real API keys -- never tracked. .env.example (tracked) is the template.
+.env
+
+__pycache__/
+*.pyc
