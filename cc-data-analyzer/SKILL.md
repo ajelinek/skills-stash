@@ -1,112 +1,172 @@
 ---
 name: cc-data-analyzer
 description: >
-  Analyzes a user's existing Claude conversations and projects to recommend a
-  cleaner setup: what custom Skills would remove recurring manual work, what
-  Projects should exist, how current chats should be grouped into them, and
-  what description and file/folder structure each Project needs. Always stops
-  after presenting the plan for review — never reorganizes anything on its
-  own. Only if the user explicitly asks, and only after confirming a
-  browser-automation tool is actually available in this environment, offers to
-  carry out the plan directly in the Claude.ai UI. Trigger on "analyze my
-  Claude chats/projects", "help me organize my Claude workspace", "what skills
-  should I create", "audit/clean up my projects", "reorganize my chats", or
-  similar requests to turn a sprawling set of conversations into structure.
+  Analyzes a user's Claude.ai/Cowork data export (conversations.json,
+  memories.json, projects/*.json from Settings > Account > Export Data) and
+  turns a sprawling conversation history into concrete next steps through
+  two lenses on the same data: a workspace reorganization plan (which chats
+  belong in which Projects, what folder/file structure each Project needs)
+  or an automation report (which recurring workflows should become a Skill
+  vs. a scheduled task, with evidence). Ask the user which lens they want,
+  or run both. Trigger on "analyze my Claude chats/projects", "help me
+  organize my Claude workspace", "what skills should I build", "audit my
+  Claude usage", "what should I automate", "reorganize my chats", "find
+  patterns in my conversations", "process management", or when the user
+  hands over a data export folder and asks what to do with it. Full-strength
+  analysis (and the automation lens specifically) requires an actual data
+  export folder containing conversations.json -- if the user hasn't
+  provided or pointed to one, ask for it rather than guessing.
 ---
 
 # CC Data Analyzer
 
-This is a two-path skill. **Path A (analysis and recommendations) always
-runs and is the deliverable on its own.** Path B (using a browser tool to
-execute the plan) is optional, gated, and only ever offered — never assumed.
+## What this is
 
-Do not skip straight to recommendations. Confirm you actually have the data
-in hand first — a plan built on a guessed-at inventory is worse than no plan.
+One skill, two lenses on the same data. A Claude.ai/Cowork data export
+holds everything: every conversation, every project, Claude's own
+synthesized memory of the user. This skill mines it two different ways,
+sharing the same parsing and clustering groundwork:
 
-## Path A: Analyze and recommend
+- **Reorganization** -- how should the *existing* chats/projects be
+  restructured? Which chats belong together in a Project, what should that
+  Project be named/described, what file structure should it hold.
+- **Automation mining** -- what recurring *workflow*, done by hand across
+  many chats, should become a Skill (triggered on demand) or a scheduled
+  task (runs on a cadence) going forward.
 
-### Step 1: Get the data
+Both always stop at a reviewable plan/report. Neither reorganizes,
+deletes, or builds anything without the user explicitly saying so afterward.
 
-There's no single standard way to pull a user's Claude conversation/project
-history, so ask rather than assume. Check, in order:
+## Step 1: Get the data
 
-1. **Tool access in this environment** — search for a tool that can list or
-   export the user's Claude conversations/projects (via `ToolSearch` or
-   equivalent). If one exists, use it.
-2. **A data export** — Claude.ai's Settings -> Account lets a user export
-   their data as a JSON/HTML bundle. If the user has one, ask for the file
-   path.
-3. **Manual rundown** — if neither of the above is available, ask the user to
-   describe their current chats/projects directly: rough count, names, what
-   each is about, which ones are active vs. dormant. Say plainly that the
-   plan will only be as good as this input.
+The real analytical power here (clustering, evidence-backed
+recommendations) depends on the actual account-level data export from
+claude.ai/Cowork -- **Settings > Account > Export Data**. Once unzipped it
+contains `conversations.json` at minimum, usually alongside
+`memories.json`, `projects/*.json`, and `users.json`.
 
-Don't proceed to Step 2 until you have real data by one of these paths —
-flag it to the user if all three come up empty rather than inventing content.
+Check, in order:
 
-### Step 2: Understand it
+1. **A data export folder** -- if the user has one, ask for its path. This
+   is the only tier that supports both lenses at full strength, and the
+   *only* tier automation mining (Step 3, second option) accepts at all.
+2. **Tool access in this environment** -- if no export, search (`ToolSearch`
+   or equivalent) for a tool that can list the user's conversations/projects
+   directly. This can support reorganization analysis at reduced fidelity,
+   but not automation mining -- that lens needs the whole parsed corpus to
+   see a pattern actually repeat, not a live listing.
+3. **Manual rundown** -- if neither exists, ask the user to describe their
+   current chats/projects directly: rough count, names, what each is about,
+   which are active vs. dormant. Only reorganization analysis is possible
+   this way, and only as well as the description given -- say so plainly.
 
-Work through the data looking for:
+Don't proceed on a guessed-at inventory. If the user wants automation
+mining but only has tiers 2 or 3, say plainly that lens needs a real export
+and offer reorganization analysis instead (or wait for the export).
 
-- **Topic clusters** — chats that are really the same kind of work spread
-  across multiple threads (a sign they belong in one Project).
-- **Recurring patterns** — the same multi-step process being manually
-  re-explained or re-solved chat after chat (a sign a Skill should exist).
-- **Existing structure vs. reality** — where current Projects (if any) no
-  longer match what the chats inside them are actually about.
-- **Stale vs. active** — old one-off threads that don't need a home vs. live
-  work that does.
+This is a **different format** from a Claude Code CLI session log
+(`~/.claude/projects/*.jsonl`) or a single pasted conversation transcript.
+If the user says "export" but hands you one of those instead, stop and
+clarify -- the parser below expects `conversations.json` and won't work on
+those formats.
 
-Keep this analysis visible to the user in summary form — don't jump straight
-from raw data to a polished plan with no visibility into the reasoning.
+## Step 2: Run the parser (if a real export is available)
 
-### Step 3: Produce the plan
+Raw `conversations.json` can be huge -- every message, every tool call,
+every thinking block. Reading it directly wastes context and buries the
+signal. Run the bundled script once, regardless of which lens (or both)
+you're about to run:
 
-Output a single structured plan, in this order:
+```bash
+python3 scripts/parse_export.py --export-dir <path-to-unzipped-export> --out-dir <workdir>
+```
 
-1. **Skills to create** — for each: proposed name, one-line trigger
-   description, and *why* (the specific repeated pattern it would capture).
-2. **Projects** — for each: proposed name, description, and which existing
-   chats should move into it.
-3. **File/folder structure per project** — what reference files, instructions,
-   or knowledge docs each Project should hold, and why.
-4. **Leftovers** — chats that don't fit any recommended Project; say what you
-   propose doing with them (archive, leave standalone, etc.) rather than
-   silently dropping them from the plan.
+This writes four files to `<workdir>`, shared by both lenses:
 
-### Step 4: Get explicit review
+- `conversations.jsonl` -- one compact JSON object per conversation (name,
+  summary, dates, message counts, first human message, tool names used,
+  extracted keywords, project link if present), sorted oldest to newest.
+- `projects_index.json` -- project uuid -> name/description/conversation_count.
+- `memory_context.md` -- Claude's own synthesized memory of the user,
+  verbatim, if the export included `memories.json`. High-value: Claude has
+  already noticed recurring themes. Treat it as a second opinion to
+  cross-check your own clustering against, not ground truth.
+- `stats.json` -- corpus size, date range, project coverage.
 
-Present the plan and stop. Ask the user to confirm, edit, or reject pieces of
-it. Nothing in Path B happens until they've reacted to the plan — a plan
-that's merely "presented" is not the same as one that's "approved."
+Check `stats.json` first. If `conversation_count` is very small (under 10)
+or the date range is only a few days, say so plainly before producing
+either lens's output -- thin data means low-confidence recommendations,
+not no output. Also check `conversations_with_project` -- it's frequently
+0 even when projects exist, so don't assume the `project_uuid` link works;
+fall back to `memory_context.md`'s per-project sections and keyword/topic
+clustering.
 
-## Path B: Offer to execute (opt-in, gated — never automatic)
+If Step 1 landed on tier 2 or 3 (no real export), skip this step and work
+directly from whatever data you gathered.
 
-Only after Step 4's plan has been reviewed:
+## Step 3: Pick the lens
 
-1. **Check availability first.** Search for a browser-automation /
-   computer-use tool (e.g. via `ToolSearch`) in this environment. Do not tell
-   the user it's available without having actually confirmed it.
-2. **If unavailable:** say so, and stop here — hand over the reviewed plan as
-   the deliverable (e.g. a checklist) for the user to execute by hand.
-3. **If available:** ask the user, explicitly, whether they want you to use it
-   to carry out the approved plan (create the Projects, move the chats, set
-   descriptions, set up files/folders) directly in the Claude.ai UI. Make
-   clear this requires them to be logged into Claude in the browser the tool
-   controls.
-4. **Never do this automatically.** A prior approval in an earlier session
-   doesn't carry over — ask again each time this path is used, and only act
-   on the plan as reviewed in Step 4, not on a re-interpretation of it.
-5. If they say yes, work through the approved plan one Project at a time,
-   confirming as you go rather than silently running the whole batch — see
-   [references/browser-execution.md](references/browser-execution.md) for
-   the general approach. Report back what was actually done vs. skipped.
+Ask the user which they want, unless their original request already made
+it obvious:
+
+- **"Which chats go where / how should my workspace be structured"** ->
+  reorganization, see
+  [references/reorganization.md](references/reorganization.md).
+- **"What should I automate / what skills should I build"** -> automation
+  mining, see
+  [references/automation-mining.md](references/automation-mining.md).
+- **Both** -- run both; they share Steps 1-2's data, so this is one export
+  parsed once and read through two different lenses. Present them as two
+  clearly separated sections (or two separate deliverables), not merged
+  into one document -- they answer different questions and get
+  reviewed/actioned independently.
+
+## Step 4: Present and get explicit review
+
+Whichever lens (or both), stop after presenting the output. Ask the user
+to confirm, edit, or reject pieces of it. Nothing in Step 5 happens until
+they've reacted -- a plan/report that's merely "presented" is not the same
+as one that's "approved."
+
+## Step 5: Offer to act (opt-in, gated -- never automatic)
+
+Only after Step 4's review, and the two lenses lead to different follow-ups:
+
+- **Reorganization plan approved** -> executing it (creating/renaming
+  Projects, moving chats, setting up files) means driving the Claude.ai UI
+  directly, which requires a browser-automation / computer-use tool to be
+  available and enabled in this environment, with the user logged into
+  Claude in the browser it controls. Without that tool available and
+  enabled, this step cannot run at all -- hand over the plan as a checklist
+  instead.
+  1. Search for such a tool first (e.g. via `ToolSearch`). Don't tell the
+     user it's available without having actually confirmed it.
+  2. If unavailable, say so and stop -- hand over the reviewed plan as a
+     checklist for the user to execute by hand.
+  3. If available, ask explicitly whether they want you to carry out the
+     approved plan. A prior approval from an earlier session doesn't carry
+     over -- ask again each time, and act only on the plan as reviewed in
+     Step 4, not a re-interpretation of it.
+  4. If yes, work through it one Project at a time -- see
+     [references/browser-execution.md](references/browser-execution.md).
+- **Automation mining report approved** -> no browser needed. Offer to
+  build the top recommendation directly: invoke `skill-creator` for a
+  skill candidate, or set up a scheduled task for a schedule candidate.
+
+## Handling sensitive content
+
+A real data export contains the user's actual conversation history, which
+may include business details, personal context, and information about
+third parties. Analyze it within this session to produce the plan/report;
+don't restate large verbatim chunks of private conversation content beyond
+what's needed as evidence (a conversation name, date, and one-line excerpt
+is enough -- not a full quote).
 
 ## Non-goals
 
-- Not a general chat summarizer — the output is a reorganization plan, not a
+- Not a general chat summarizer -- the output is a plan or a report, not a
   digest of what was discussed.
-- Not a bulk-delete tool. This skill only ever proposes moves/groupings/new
-  structure; deletion of anything isn't part of Path A or Path B.
-- Not a substitute for the user's own judgment on naming/scope — the plan is
-  a strong starting proposal, not a final answer.
+- Not a bulk-delete tool -- this skill only ever proposes moves, groupings,
+  new structure, skills, or schedules; deletion isn't part of any step.
+- Not a substitute for the user's own judgment on naming/scope -- both
+  lenses produce a strong starting proposal, not a final answer.
