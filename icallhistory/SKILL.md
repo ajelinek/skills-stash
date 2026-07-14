@@ -4,8 +4,8 @@ description: >
   Query local Mac/iPhone call history — cellular phone calls, FaceTime Audio, and
   FaceTime Video — by date range, contact, or direction, and resolve numbers to
   contact names via the local AddressBook. Trigger on requests like "who called me",
-  "what numbers have I called", "show my missed calls", "did I call <person>", "call
-  history with <person>", or "correlate my calls with my texts". Read-only and
+  "what numbers have I called", "show my missed calls", "did I call [person]", "call
+  history with [person]", or "correlate my calls with my texts". Read-only and
   local-only: no calls are placed, no data is written back, no analysis is performed
   on its own — reads return structured JSON for the caller to reason about. Only
   works for Claude Code running locally on macOS with Full Disk Access granted (not

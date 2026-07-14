@@ -1,24 +1,19 @@
 ---
 name: meeting-recap
 description: >
-  Turns a meeting/call transcript (pasted text, a file, or a VTT/SRT/Otter/
-  Zoom/Teams-style export) into a short, skimmable recap: key decisions,
-  action items (owner + due date), topics discussed, and open questions --
-  built to be read in under a minute, not a wall of text. Trigger on
-  requests like "summarize this meeting/call/transcript", "write meeting
-  notes/minutes", "what did we decide", "give me the action items from this
-  call", "recap this standup/sync/1:1/interview", or whenever the user
-  pastes or hands over a transcript and asks what happened. Distinguishes an
-  actual decision from mere discussion, never fabricates names/owners/
-  deadlines (flags them as UNASSIGNED/TBD/"unclear from transcript" instead
-  of guessing), and scales structure to the meeting's actual length and
-  complexity on a sliding ruler -- the same rigor for a 10-minute standup,
-  a 2-hour planning session, a full-day workshop, or a multi-day offsite,
-  without forcing any of them into the same rigid template. Not for
-  behavioral/communication
-  coaching feedback (filler words, conflict avoidance, speaking-time
-  balance, leadership patterns) -- that's a different kind of tool; this one
-  is strictly about what happened, what was decided, and what's owed.
+  Turns a meeting/call transcript (pasted text, file, or VTT/SRT/Otter/Zoom/
+  Teams export) into a short, skimmable recap: decisions, action items
+  (owner + due date), topics, and open questions -- readable in under a
+  minute. Trigger on "summarize this meeting/call/transcript", "write
+  meeting notes/minutes", "what did we decide", "give me the action
+  items", "recap this standup/sync/1:1/interview", or when handed a
+  transcript. Distinguishes real decisions from mere discussion, never
+  fabricates names/owners/deadlines (flags UNASSIGNED/TBD/"unclear" instead
+  of guessing), and scales structure to meeting length via a sliding ruler
+  -- same rigor from a 10-minute standup to a multi-day offsite, no rigid
+  template. Not for behavioral coaching feedback (filler words,
+  speaking-time balance) -- strictly what happened, what was decided, and
+  what's owed.
 ---
 
 # Meeting Recap

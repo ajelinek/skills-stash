@@ -3,9 +3,9 @@ name: imessage
 description: >
   Query local iMessage history by date range, contact, or search term, resolve
   contacts to chat IDs, and send new iMessages. Trigger on requests like "what did
-  <person> say", "show my recent texts", "find the message where...", "who have I
-  been talking to", "text <person> ...", "reply to <person> saying ...", or "send a
-  message to <chat>". Does not summarize, analyze, or interpret message content on
+  [person] say", "show my recent texts", "find the message where...", "who have I
+  been talking to", "text [person] ...", "reply to [person] saying ...", or "send a
+  message to [chat]". Does not summarize, analyze, or interpret message content on
   its own — reads return structured JSON for the caller to reason about. Sending is
   a real, irreversible action: always show the user the exact drafted text and the
   resolved recipient and get explicit confirmation before calling `send`, unless the
