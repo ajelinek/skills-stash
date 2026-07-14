@@ -1,21 +1,20 @@
 ---
 name: cc-data-analyzer
 description: >
-  Analyzes a user's Claude.ai/Cowork data export (conversations.json,
-  memories.json, projects/*.json from Settings > Account > Export Data) and
-  turns a sprawling conversation history into concrete next steps through
+  Analyzes a Claude.ai/Cowork data export (conversations.json,
+  memories.json, projects/*.json -- from Settings > Account > Export Data)
+  and turns a sprawling conversation history into concrete next steps via
   two lenses on the same data: a workspace reorganization plan (which chats
-  belong in which Projects, what folder/file structure each Project needs)
-  or an automation report (which recurring workflows should become a Skill
-  vs. a scheduled task, with evidence). Ask the user which lens they want,
-  or run both. Trigger on "analyze my Claude chats/projects", "help me
-  organize my Claude workspace", "what skills should I build", "audit my
-  Claude usage", "what should I automate", "reorganize my chats", "find
-  patterns in my conversations", "process management", or when the user
-  hands over a data export folder and asks what to do with it. Full-strength
-  analysis (and the automation lens specifically) requires an actual data
-  export folder containing conversations.json -- if the user hasn't
-  provided or pointed to one, ask for it rather than guessing.
+  belong in which Projects, what file/folder structure each needs) or an
+  automation report (which recurring workflows should become a Skill vs. a
+  scheduled task, with evidence). Ask which lens the user wants, or run
+  both. Trigger on "analyze my Claude chats/projects", "organize my Claude
+  workspace", "what skills should I build", "audit my Claude usage", "what
+  should I automate", "reorganize my chats", "find patterns in my
+  conversations", "process management", or when handed a data export
+  folder. Full-strength analysis (and automation mining specifically) needs
+  an actual export folder containing conversations.json -- ask for it
+  rather than guessing if missing.
 ---
 
 # CC Data Analyzer

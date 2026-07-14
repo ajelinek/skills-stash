@@ -4,6 +4,24 @@ Given the parsed export (or the lower-fidelity data from the main skill
 file's Step 1, tiers 2-3), answer: how should the user's *existing* chats
 and Projects be restructured?
 
+## Reconstruct project membership first if the link field is missing
+
+Check `stats.json`'s `conversations_with_project` before anything else. Many
+export schemas simply don't include a per-conversation project reference --
+`project_uuid` reads as null on every record even when Projects exist and
+most chats genuinely belong to one in the UI. If `stats.json` has a `notes`
+entry about this (or `conversations_with_project` is 0 while `project_count`
+is not), **do not report those chats as unaffiliated with any project.**
+Instead, infer real membership per conversation by cross-referencing:
+
+- `memory_context.md`'s per-project `project_memories` sections -- Claude's
+  own synthesized summary of what each project's conversations are about.
+- Topic/keyword/name similarity between a conversation and each project's
+  name/description in `projects_index.json`.
+
+Only treat a chat as genuinely project-less once you've checked it against
+both signals and found no match -- not because the raw link field was empty.
+
 ## What to look for
 
 Work through the data looking for:
@@ -11,7 +29,9 @@ Work through the data looking for:
 - **Topic clusters** -- chats that are really the same kind of work spread
   across multiple threads (a sign they belong in one Project together).
 - **Existing structure vs. reality** -- where current Projects (if any) no
-  longer match what the chats inside them are actually about.
+  longer match what the chats inside them are actually about. This
+  comparison depends on knowing which chats are "inside" each project --
+  use the reconstructed membership above when the raw link is missing.
 - **Stale vs. active** -- old one-off threads (check `updated_at` if the
   parser ran) that don't need a home vs. live work that does.
 

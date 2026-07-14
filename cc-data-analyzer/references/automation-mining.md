@@ -23,33 +23,12 @@ The end product is a report with two kinds of recommendations:
 Some clusters are genuinely both (a skill that should also run on a
 schedule). Say so when that's the case rather than forcing a single bucket.
 
-## Design lineage (why it's built this way)
-
-This lens's shape borrows from how tools like `code-insights`
-(melagiri/code-insights) and `cc-insights`/`/insights` in the
-`awesome-claude-code-toolkit` ecosystem analyze AI coding sessions: parse
-the raw logs deterministically first, then use an LLM pass to extract
-structured signal (decisions, friction, recurring patterns), then
-synthesize across the whole corpus into a report and generate concrete
-artifacts (rules, in their case; skills and schedules, in ours). None of
-those tools are dependencies here -- they work off Claude Code's local
-`~/.claude/projects/*.jsonl` session logs, a different file format from
-the account-level export this skill consumes. The architecture is the
-useful part, not the code.
-
-Two ideas carried over deliberately:
-
-1. **Deterministic extraction, then LLM synthesis.** Don't try to
-   hand-code a clustering algorithm that guesses what counts as "the same
-   workflow" -- extracting keywords and structure is mechanical
-   (`scripts/parse_export.py` does that), but deciding "these five
-   conversations about outreach emails to different platforms are one
-   recurring workflow" requires actually understanding the content. That's
-   your job, not the script's.
-2. **Evidence-backed output, not vibes.** Every recommendation in the
-   report must cite the specific conversations (name + date) that justify
-   it. A recommendation with no evidence trail is not trustworthy and the
-   user has no way to sanity-check it.
+Two principles drive this lens: extraction is mechanical
+(`scripts/parse_export.py` handles keywords/structure), but deciding "these
+five conversations are one recurring workflow" requires actually
+understanding the content -- that's your job, not the script's. And every
+recommendation must cite the specific conversations (name + date) that
+justify it; a recommendation with no evidence trail isn't trustworthy.
 
 ## Read and cluster
 

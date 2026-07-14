@@ -190,14 +190,43 @@ def main():
             f.write("*(no memories.json in this export)*\n")
 
     dates = [r["created_at"] for r in records if r.get("created_at")]
+    conversations_with_project = sum(1 for r in records if r.get("project_uuid"))
+    conversations_without_project = sum(1 for r in records if not r.get("project_uuid"))
     stats = {
         "conversation_count": len(records),
         "project_count": len(projects),
         "date_range": {"earliest": min(dates) if dates else None, "latest": max(dates) if dates else None},
-        "conversations_with_project": sum(1 for r in records if r.get("project_uuid")),
-        "conversations_without_project": sum(1 for r in records if not r.get("project_uuid")),
+        "conversations_with_project": conversations_with_project,
+        "conversations_without_project": conversations_without_project,
         "has_memory_context": mem_path.exists(),
     }
+
+    # Some export schemas omit the per-conversation project link entirely --
+    # conversations.json simply has no "project" field on any record, even
+    # though projects/*.json exist and those conversations really do belong
+    # to them in the UI. When that happens, conversations_with_project reads
+    # as 0 regardless of true project membership, which is easy to mistake
+    # for "this account doesn't use Projects." Surface it loudly here, right
+    # next to the stat, since this file is the first thing read.
+    if projects and conversations_with_project == 0:
+        stats["notes"] = [
+            "conversations_with_project is 0 but project_count is "
+            f"{len(projects)} -- this export's conversations.json has no "
+            "per-conversation project link field at all (checked, absent "
+            "from every record). This does NOT mean the conversations are "
+            "unaffiliated with any project. Infer real project membership "
+            "from memory_context.md's project_memories sections and by "
+            "matching each conversation's name/summary/keywords against "
+            "the project name/description in projects_index.json. Do not "
+            "report conversations as project-less based on this field alone."
+        ]
+        print(
+            "NOTE: conversations.json has no project link field for any "
+            "conversation, despite projects existing -- see stats.json "
+            "'notes' for how to infer project membership instead.",
+            file=sys.stderr,
+        )
+
     with open(out_dir / "stats.json", "w") as f:
         json.dump(stats, f, indent=2)
 
