@@ -12,8 +12,10 @@ description: >
   actual decision from mere discussion, never fabricates names/owners/
   deadlines (flags them as UNASSIGNED/TBD/"unclear from transcript" instead
   of guessing), and scales structure to the meeting's actual length and
-  complexity instead of forcing one rigid template on a 10-minute standup
-  and a 2-hour planning session alike. Not for behavioral/communication
+  complexity on a sliding ruler -- the same rigor for a 10-minute standup,
+  a 2-hour planning session, a full-day workshop, or a multi-day offsite,
+  without forcing any of them into the same rigid template. Not for
+  behavioral/communication
   coaching feedback (filler words, conflict avoidance, speaking-time
   balance, leadership patterns) -- that's a different kind of tool; this one
   is strictly about what happened, what was decided, and what's owed.
@@ -46,16 +48,33 @@ python3 <skill_dir>/scripts/normalize_transcript.py <path-or-'-'-for-stdin>
 
 Replace `<skill_dir>` with wherever this skill is installed (the directory
 containing this SKILL.md). It prints one JSON object: `format_detected`,
-a flat `segments` list (`speaker`, `timestamp_sec`, `text`), and `stats`.
+a flat `segments` list (`speaker`, `timestamp_sec`, `end_sec`, `text`), and
+`stats`.
 
 Check `stats` before doing anything else:
 
+- **`recommended_tier`** -- the sliding-ruler tier (Micro through Multi-day)
+  that sets this recap's structure and length budget; see the ruler in
+  [references/output-template.md](references/output-template.md). Its
+  `basis` field says whether `duration_sec` came from real recorded
+  timestamps (`recorded_end_times`/`start_times_only`) or a word-count
+  estimate (`estimated_from_word_count`) -- treat an estimated tier as a
+  starting point, not a precise cutoff.
+- **Meeting length is computed from the transcript's own first recorded
+  start time through its last recorded end time** (`start_sec`/`end_sec`/
+  `duration_sec`) -- not word count, whenever the format actually records
+  cue end times (WebVTT/SRT do). Word count is only used to *estimate*
+  duration as a last resort, when there are no timestamps at all.
+- **`possible_session_breaks`** / **`day_marker_hints`** -- evidence of
+  natural session or day boundaries (a large recorded gap, an explicit "Day
+  2" mention). Hints, not verdicts -- corroborate with the transcript's own
+  language before treating a meeting as multi-session/multi-day. See
+  "Finding the session/day boundaries" in
+  [references/output-template.md](references/output-template.md).
 - **`warnings`** -- surface these to the user plainly (very short
-  transcript, no speaker labels detected, no structural segmentation found)
-  rather than silently producing a confident-looking recap anyway.
-- **`word_count`** / **`duration_sec`** -- use these plus the content itself
-  to judge the meeting's size and type; see the meeting-type adaptivity
-  section of [references/extraction-rules.md](references/extraction-rules.md).
+  transcript, no speaker labels detected, no structural segmentation found,
+  duration estimated rather than recorded) rather than silently producing a
+  confident-looking recap anyway.
 - If `format_detected` looks wrong given what you can actually see in the
   raw text, the parser is a heuristic and can miss unusual export formats --
   fall back to reading the raw transcript directly rather than trusting a
@@ -77,18 +96,23 @@ apply it. In brief, it covers:
 - Adapting which sections apply to the meeting's actual type and size,
   rather than forcing one rigid template on everything
 - Working through a very long transcript without letting the *output* grow
-  just because the *input* did
+  just because the *input* did -- and for a half-day-plus meeting, treating
+  each session/day as its own extraction pass feeding a consolidated
+  top-level rollup, per "Multi-session and multi-day meetings"
 - A cheap final self-check against the source transcript before presenting
 
 ## Step 3: Write the recap
 
-Use the exact template and the hard length rules in
+Use the exact template(s) and the hard rules in
 [references/output-template.md](references/output-template.md) -- read it
-before writing the first recap. The short version: a mandatory one-to-three
-sentence TL;DR first, then only the sections that actually apply, bullets
-and tables (never paragraphs), nothing longer than 1-2 sentences per bullet,
-and the whole thing readable in under a minute regardless of how long the
-source meeting was.
+before writing the first recap. The short version: look up the tier from
+`stats.recommended_tier` (Micro through Multi-day), then follow that tier's
+row on the sliding ruler. Every tier starts with a mandatory TL;DR, uses
+bullets and tables (never paragraphs), and stays within its entry-point
+word budget; Half-day and above add a short session/day index above a
+per-session detail section instead of one long flat document. The point
+that holds at every tier: whoever stops reading after the TL;DR should
+still know what happened and what's owed to them.
 
 ## Step 4: Offer next steps -- don't do them unasked
 
@@ -130,13 +154,23 @@ reasonable to *offer*, not to do automatically:
   (WebVTT, SRT, labeled paste), not a universal parser for every transcript
   tool in existence -- if `format_detected` looks wrong, read the raw text
   directly instead of trusting it blindly.
-- No cross-meeting comparison or trend-tracking; this is a single-transcript
-  tool.
+- Duration is only as good as the transcript's own timestamps. WebVTT/SRT
+  record a real end time per cue, so their duration is exact; a plain
+  timestamp-prefixed paste only records when each turn *started*, so
+  duration there is a start-to-start span (a slight underestimate); with no
+  timestamps at all, duration is a rough word-count estimate --
+  `duration_basis` always says which case applies.
+- Session/day boundary detection (`possible_session_breaks`,
+  `day_marker_hints`) is heuristic evidence, not a guarantee -- corroborate
+  with the transcript's own language before restructuring around it.
+- No cross-meeting comparison or trend-tracking; a multi-day event is
+  handled as one connected rollup, not a history across separate,
+  unrelated meetings over time.
 
 ## Supporting files
 
 | File | Purpose |
 | --- | --- |
-| `references/extraction-rules.md` | Decision-vs-discussion heuristics, action-item rules, topic clustering, confidence signaling, meeting-type adaptivity, long-transcript handling, the pre-presentation self-check |
-| `references/output-template.md` | The exact recap template, the reasoning behind each length rule, and a fully worked example |
-| `scripts/normalize_transcript.py` | Stdlib-only transcript format detection and normalization (VTT/SRT/labeled/plain) |
+| `references/extraction-rules.md` | Decision-vs-discussion heuristics, action-item rules, topic clustering, confidence signaling, meeting-type adaptivity, long-transcript and multi-session/multi-day handling, the pre-presentation self-check |
+| `references/output-template.md` | The sliding ruler, the flat and hierarchical recap templates, the reasoning behind each rule, and worked examples |
+| `scripts/normalize_transcript.py` | Stdlib-only transcript format detection, normalization, real start/end-time duration, session/day-break detection, and tier recommendation (VTT/SRT/labeled/plain) |

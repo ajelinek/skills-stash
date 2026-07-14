@@ -23,11 +23,15 @@ rigid parser:
   Decisions, even if they sound confident.
 
 **Reversed or superseded decisions:** meetings backtrack. If something is
-decided early and then changed later in the same transcript, record only the
-final state as *the* decision. A short parenthetical -- "(revised from the
-earlier plan to ship Thursday)" -- is worth including when the reversal
-itself is material; skip it when the earlier version was clearly just
-thinking out loud.
+decided early and then changed later -- whether later in the same
+transcript, in a later session, or on a later day of a multi-day event --
+record only the final state as *the* decision. A short parenthetical --
+"(revised from the earlier plan to ship Thursday)" -- is worth including
+when the reversal itself is material; skip it when the earlier version was
+clearly just thinking out loud. For a hierarchical recap (see [Multi-session
+and multi-day meetings](#multi-session-and-multi-day-meetings) below), this
+means checking later sessions/days before finalizing the top-level
+Decisions list, not just scanning one session in isolation.
 
 If a meeting made no real decisions (pure brainstorm, status update, etc.),
 say so in one line rather than omitting the section or stretching a
@@ -58,9 +62,12 @@ with a table row it doesn't earn.
 - If the meeting had a stated agenda, use it as the organizing backbone
   instead of inventing new topic buckets.
 - Otherwise, merge related sub-threads into a small number of meaningfully
-  distinct clusters -- aim for **3-5**, not one bucket per utterance. Working
-  memory for a scanned list holds a handful of grouped items well; a longer
-  flat list stops being skimmable regardless of how short each line is.
+  distinct clusters -- the count in `stats.recommended_tier` (typically 3-5
+  for a Standard meeting; see the sliding ruler in
+  [output-template.md](output-template.md)), not one bucket per utterance.
+  Working memory for a scanned list holds a handful of grouped items well;
+  a longer flat list stops being skimmable regardless of how short each
+  line is.
 - Each topic gets 1-3 bullets, not a paragraph. If a topic genuinely needs
   more than that to make sense, it's a candidate for the expanded notes
   offered in Step 4 of SKILL.md, not the default recap.
@@ -96,20 +103,30 @@ Never silently guess. Concretely:
 
 ## Meeting-type adaptivity
 
-Infer the shape from the transcript itself (stats from
-`normalize_transcript.py` plus content) rather than forcing one template on
-every meeting:
+Start from `stats.recommended_tier` (see the sliding ruler in
+[output-template.md](output-template.md)) for the base structure, then
+adjust for the meeting's actual type and content -- duration is a strong
+prior, not an override of what's actually in the transcript:
 
 - **Very short / single-topic (standup, quick sync):** the TL;DR plus
   whichever of Decisions/Action Items/Open Questions actually have content
   is enough -- don't force a "Topics Discussed" section that would just
   repeat the TL;DR.
 - **1:1 or single-subject call:** the whole meeting may *be* one topic; skip
-  topic clustering and go straight to what was decided/actioned.
-- **Standard sync, planning, or review:** the full template applies.
+  topic clustering and go straight to what was decided/actioned, even if its
+  duration would otherwise suggest more structure.
+- **Standard sync, planning, or review:** the flat template applies as-is.
 - **Brainstorm / exploratory session:** it's normal and expected to have few
   or zero decisions and many open questions -- say that plainly rather than
   padding the Decisions section to look substantive.
+- **Half-day and beyond, or real session/day breaks detected:** switch to
+  the hierarchical rollup-plus-detail structure -- see [Multi-session and
+  multi-day meetings](#multi-session-and-multi-day-meetings) below and the
+  hierarchical template in [output-template.md](output-template.md). A
+  tightly-focused 2.5-hour workshop with no real break can stay flat; a
+  45-minute meeting that jumps across 8 unrelated topics might need early
+  structure despite its short duration -- detected breaks and actual
+  content can override the duration default in either direction.
 
 A section that legitimately has nothing in it still gets a one-line "None"
 rather than silently disappearing -- an omitted section reads as "forgot to
@@ -117,17 +134,49 @@ check," a stated "None" reads as "checked, nothing here."
 
 ## Long transcripts
 
-The normalized `stats.word_count` (and `duration_sec`, if timestamps exist)
-tells you how much material you're working with -- but a longer input should
-almost never mean a longer *output*. For a very long or multi-hour
-transcript, work through it in sequence (by natural agenda breaks if there
-are any, or in large sequential passes otherwise) and keep a running list of
-candidate decisions/action items/topics as you go, so nothing from later in
-the meeting gets dropped just because it's furthest from the end of your
-context -- then compress that running list down to the same short recap
-format as any other meeting. Length of input and length of output are
-separate variables; only the second one is under a hard budget (see
-[output-template.md](output-template.md)).
+The normalized `stats.word_count`/`duration_sec` tells you how much material
+you're working with -- but a longer input should almost never mean a
+proportionally longer *output*. Work through a long transcript in sequence
+(by natural agenda or session breaks if there are any, or in large
+sequential passes otherwise) and keep a running list of candidate
+decisions/action items/topics as you go, so nothing from later in the
+meeting gets dropped just because it's furthest from the end of your
+context. Then compress that running list to fit whichever tier actually
+applies:
+
+- **Extended tier and below:** compress into the same flat, short recap as
+  any shorter meeting -- length of input and length of the (single) output
+  are separate variables, and only the output is under a hard budget (see
+  [output-template.md](output-template.md)).
+- **Half-day tier and above:** some growth in *total* document size is
+  expected and fine, but only as more short, independently-skippable chunks
+  (sessions or days) -- never as longer prose in the part everyone reads
+  first. See below.
+
+## Multi-session and multi-day meetings
+
+Once `stats.recommended_tier.structure` is `hierarchical` -- or the content
+itself won't compress into the flat cluster cap even after merging, even at
+a shorter duration -- switch to the rollup-plus-detail template in
+[output-template.md](output-template.md) instead of a longer flat document.
+What that means for extraction specifically:
+
+- **Each session/day gets its own extraction pass**, following exactly the
+  rules above (deciding vs. discussing, action-item fields, topic
+  clustering) as if it were a standalone meeting of that session's own
+  length -- a 40-minute session inside a full-day workshop gets
+  Standard-tier treatment for its own detail section.
+- **The top-level Decisions and Action Items are a consolidated rollup**
+  across every session/day, not a duplicate of each session's own list --
+  and reversed decisions get resolved across the *whole* rollup (see
+  "Reversed or superseded decisions" above), not just within one session.
+- **Boundaries come from evidence, not just duration.** Use
+  `stats.possible_session_breaks` and `stats.day_marker_hints` as signals,
+  corroborated by the transcript's own language (a stated agenda, "let's
+  move to the next session," a new day's greeting) -- see "Finding the
+  session/day boundaries" in [output-template.md](output-template.md) for
+  the full guidance, including multi-day-specific deduplication and
+  cross-day reversal handling.
 
 ## Worked example: a trickier case
 
