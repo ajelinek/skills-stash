@@ -38,6 +38,7 @@ npx skills add ajelinek/skills-stash astro-seo
 npx skills add ajelinek/skills-stash cmux-workspace-builder
 npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 npx skills add ajelinek/skills-stash imessage
+npx skills add ajelinek/skills-stash icallhistory
 npx skills add ajelinek/skills-stash cc-data-analyzer
 npx skills add ajelinek/skills-stash email-domain-reputation
 npx skills add ajelinek/skills-stash meeting-recap
@@ -55,6 +56,7 @@ npx skills add ajelinek/skills-stash meeting-recap
 | `cmux-workspace-builder`       | Interview-driven builder for cmux.json workspace configs: pane layouts, split configuration, and dev environment automation                           |
 | `firebase-dynamic-ports-setup` | Configure Firebase emulators for per-developer port isolation on shared hosts, eliminating port conflicts on team machines                            |
 | `imessage`                     | iMessage history queries (date range, contact, search) against local chat.db, contact resolution, and sending new messages via Messages.app |
+| `icallhistory`                 | Mac/iPhone call history (cellular, FaceTime Audio/Video) queries by date range, contact, or direction against the local CallHistory.storedata, with the same AddressBook contact resolution as `imessage` — read-only, no calls placed |
 | `cc-data-analyzer`             | Mines a Claude.ai/Cowork data export two ways: a workspace reorganization plan (Projects, chat groupings, file/folder structure — with an opt-in, gated offer to execute it via a browser tool) or an automation report (recurring workflows recommended as Skills vs. scheduled tasks, with evidence) |
 | `email-domain-reputation`      | Checks an email/domain's reputation via EmailRep + Abstract API Email Validation (stdlib-only Python, no install; keys never touch git or Claude's context), merges the results, and returns a Trust/Caution/Block verdict — plus an SPF/DMARC audit when the target is your own domain |
 | `meeting-recap`                | Turns a meeting/call transcript (VTT/SRT/plain-text export, stdlib-only Python parser, no install) into a short, skimmable recap — decisions, action items with owner + due date, topics, open questions — with hard `UNASSIGNED`/`TBD`/"unclear from transcript" fallbacks instead of ever guessing a name or date, and a length budget that scales to the meeting instead of one rigid template for everything |
