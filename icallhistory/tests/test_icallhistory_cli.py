@@ -299,6 +299,17 @@ class CliFixtureTestCase(unittest.TestCase):
         self.assertEqual(result["count"], 1)
         self.assertEqual(result["contacts"][0]["handle"], "+" + icallhistory_cli._normalize_digits(self.BOB))
 
+    def test_contacts_list_all_does_not_duplicate_phone_contacts(self):
+        # load_address_book() indexes each phone number under two keys (bare
+        # last-10-digits and canonical "+"-prefixed form). Listing everyone must
+        # collapse back to one row per contact, same as a --query search does.
+        result = icallhistory_cli.cmd_contacts(argparse_ns(query=None, handle=None))
+        names = [c["name"] for c in result["contacts"]]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(result["count"], 2)  # Jane Doe, Bob Smith
+        handles = {c["handle"] for c in result["contacts"]}
+        self.assertEqual(handles, {self.JANE, self.BOB})
+
 
 class DoctorContinuityWarningTests(unittest.TestCase):
     """A Mac without Continuity Calling ('Calls From iPhone') enabled only ever sees
@@ -386,6 +397,21 @@ class CliSubprocessSmokeTest(unittest.TestCase):
         data = json.loads(proc.stdout)
         self.assertTrue(data["ok"])
         self.assertEqual(data["call_count"], 1)
+
+    def test_output_is_compact_json_not_pretty_printed(self):
+        # SKILL.md tells the caller to parse this output, not eyeball it — indent=2
+        # would cost real tokens on whitespace for no benefit to that consumer.
+        env = dict(os.environ)
+        env["ICALLHISTORY_DB_PATH"] = self.db_path
+        env["ICALLHISTORY_ADDRESSBOOK_DIR"] = os.path.join(self.tmpdir, "nonexistent")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT_PATH), "doctor"],
+            capture_output=True, text=True, env=env, timeout=10,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.count("\n"), 1)  # one line of JSON + trailing newline
+        self.assertNotIn("  ", proc.stdout)  # no indentation whitespace
+        json.loads(proc.stdout)  # still valid JSON
 
     def test_calls_via_subprocess(self):
         env = dict(os.environ)

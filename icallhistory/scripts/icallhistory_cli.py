@@ -458,11 +458,14 @@ def cmd_contacts(args: argparse.Namespace) -> dict[str, Any]:
     if args.handle:
         name = resolve_handle_to_name(address_book, args.handle)
         return {"contacts": [{"handle": args.handle, "name": name}], "count": 1 if name else 0}
-    if args.query:
-        keys = find_handles_by_name(address_book, args.query)
-        contacts = [{"handle": k, "name": address_book[k]} for k in keys]
-        return {"contacts": contacts, "count": len(contacts)}
-    contacts = [{"handle": k, "name": v} for k, v in sorted(address_book.items(), key=lambda kv: kv[1])]
+    # find_handles_by_name's canonical-key filter applies here too (an empty query
+    # matches every name) — without it, listing everyone would surface each phone
+    # contact twice, once per index key from load_address_book().
+    keys = find_handles_by_name(address_book, args.query or "")
+    contacts = sorted(
+        ({"handle": k, "name": address_book[k]} for k in keys),
+        key=lambda c: c["name"],
+    )
     return {"contacts": contacts, "count": len(contacts)}
 
 
@@ -507,7 +510,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     except ValueError as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stdout)
         return 1
-    print(json.dumps(output, indent=2, ensure_ascii=False))
+    # Compact, not pretty-printed: SKILL.md tells the caller to parse this, not
+    # eyeball it, and indent=2 was costing ~30% extra tokens on nothing but
+    # whitespace for every `calls` page returned to the model.
+    print(json.dumps(output, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 

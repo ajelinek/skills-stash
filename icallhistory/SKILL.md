@@ -77,7 +77,8 @@ the two compose cleanly when scoping both to the same window.
 AddressBook or CallHistory itself stores them in (loose digit-matching handles
 punctuation differences like `(555) 123-4567` vs `+15551234567`).
 
-Each call record:
+Each call record (indented here for readability; actual stdout is compact
+single-line JSON):
 
 ```json
 {
@@ -117,15 +118,14 @@ canonical handle to pass to both.
 ## Continuity Calling — read this before concluding "no calls found"
 
 `CallHistory.storedata` only has **real cellular phone calls** if this Mac has
-Continuity Calling ("Calls From iPhone") turned on: FaceTime -> Settings/Preferences
--> Calls From iPhone, with the Mac and iPhone signed into the same Apple ID and on
-the same Wi-Fi network. Without it, this database only contains FaceTime Audio/Video
-calls placed directly from the Mac — `doctor`'s `phone_call_count` will be `0` and
-it'll warn about this. This is not an iCloud-backed continuous sync the way iMessage
-is: calls only relay to the Mac while both devices have actually been near each
-other on the same network, so even with the feature on, treat this as a useful but
-possibly-incomplete record, not an authoritative log of every call your phone ever
-made. See [references/platform-issues.md](references/platform-issues.md) for detail.
+Continuity Calling ("Calls From iPhone") turned on — FaceTime -> Settings/Preferences
+-> Calls From iPhone, Mac and iPhone on the same Apple ID and Wi-Fi network. Without
+it, this database only has FaceTime Audio/Video calls placed from the Mac itself:
+`doctor`'s `phone_call_count` will be `0` and it'll warn. Even when on, it's not an
+iCloud-backed continuous sync like iMessage — calls only relay while both devices
+were actually near each other on the same network — so treat results as useful but
+possibly incomplete, not an authoritative log of every call the phone made. See
+[references/platform-issues.md](references/platform-issues.md) for detail.
 
 ## Known limitations
 
