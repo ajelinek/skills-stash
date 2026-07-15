@@ -1,7 +1,0 @@
-{
-  "type": "service_account",
-  "project_id": "shadetreeit-biz-fixture",
-  "client_email": "wha-fixture@shadetreeit-biz-fixture.iam.gserviceaccount.com",
-  "client_id": "000000000000000000000",
-  "private_key_id": "fixture-fake-key-id"
-}

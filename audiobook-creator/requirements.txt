@@ -1,0 +1,9 @@
+# Fallback for environments without uv -- create a Python 3.10-3.13 venv
+# (kokoro-onnx doesn't yet support 3.14) and `pip install -r requirements.txt`.
+# The scripts themselves declare these same deps inline via PEP 723 and
+# resolve them automatically under `uv run`, so this file only matters if
+# uv isn't available.
+kokoro-onnx==0.5.0
+markitdown[docx,pdf]>=0.1
+soundfile>=0.13
+numpy>=2.0
