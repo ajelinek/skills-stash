@@ -94,6 +94,9 @@ happened and whether anything is owed to them.>
 - **Whole default recap should fit the entry-point word budget for its
   tier.** If you're well past it, you're including detail that belongs in
   expanded notes, not the recap.
+- **Don't restate a decision's mechanism in the TL;DR if it's spelled out
+  in a Decision bullet below** -- name the outcome, the reader gets detail
+  one paragraph down.
 
 ### A worked example
 

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-check_reputation.py -- Fetch + merge email/domain reputation signals from
-EmailRep (emailrep.io) and Abstract API Email Validation into one normalized
-JSON object on stdout.
+check_reputation.py -- Fetch + normalize email/domain reputation signals from
+AbstractAPI's Email Reputation endpoint into one JSON object on stdout.
+
+AbstractAPI acquired EmailRep and merged it into this single endpoint --
+there is no separate EmailRep API to call anymore, and a key issued from
+either abstractapi.com or emailrep.io works here.
 
 Stdlib only -- no pip install, no venv, no container needed to run this.
 
@@ -15,21 +18,18 @@ Usage:
     python3 check_reputation.py <email>
 
 Required, read from the real environment first:
-    EMAILREP_API_KEY
-    EMAILREP_USER_AGENT
     ABSTRACTAPI_API_KEY
-If any are missing from os.environ, a `.env` file next to this skill's
-SKILL.md (KEY=value per line) is used to fill in only the missing ones --
-real environment variables (e.g. injected by a cloud dev environment) always
-win over the file. Keys are never accepted as CLI args, to keep them out of
-shell history and process listings.
+If missing from os.environ, a `.env` file next to this skill's SKILL.md
+(KEY=value per line) is used to fill it in -- a real environment variable
+(e.g. injected by a cloud dev environment) always wins over the file. Keys
+are never accepted as CLI args, to keep them out of shell history and
+process listings.
 
 Exit codes:
-    0 -- ran to completion; stdout is the merged JSON. A source-level error
-         (bad key, rate limit, timeout) still exits 0 -- the JSON's
-         "sources"/"partial" fields describe what happened, and a partial
-         result is still a usable one.
-    1 -- fatal error before any network call (missing env var(s), invalid
+    0 -- ran to completion; stdout is the normalized JSON. A source-level
+         error (bad key, rate limit, timeout) still exits 0 -- the JSON's
+         "source"/"ok" fields describe what happened.
+    1 -- fatal error before any network call (missing env var, invalid
          email format); stdout is a JSON object with a "fatal_error" key.
 """
 import argparse
@@ -42,13 +42,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-EMAILREP_URL_TMPL = "https://emailrep.io/{email}"
-ABSTRACTAPI_URL = "https://emailvalidation.abstractapi.com/v1/"
+ABSTRACTAPI_URL = "https://emailreputation.abstractapi.com/v1/"
 REQUEST_TIMEOUT_SECONDS = 10
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-REQUIRED_ENV_VARS = ("EMAILREP_API_KEY", "EMAILREP_USER_AGENT", "ABSTRACTAPI_API_KEY")
+REQUIRED_ENV_VARS = ("ABSTRACTAPI_API_KEY",)
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_FILE_PATH = os.path.join(SKILL_DIR, ".env")
@@ -109,32 +108,7 @@ def _http_get(url, headers, timeout):
         raise OSError(str(exc.reason)) from exc
 
 
-def fetch_emailrep(email, api_key, user_agent, timeout=REQUEST_TIMEOUT_SECONDS):
-    url = EMAILREP_URL_TMPL.format(email=urllib.parse.quote(email, safe=""))
-    headers = {"Key": api_key, "User-Agent": user_agent, "Accept": "application/json"}
-    try:
-        status, body = _http_get(url, headers, timeout)
-    except TimeoutError:
-        return _error_result("timeout", "EmailRep request timed out")
-    except OSError as exc:
-        return _error_result("network_error", str(exc))
-
-    if status == 401:
-        return _error_result("invalid_api_key", "EmailRep rejected the API key (401)", 401)
-    if status == 429:
-        return _error_result("rate_limited", "EmailRep rate limit hit (429)", 429)
-    if status != 200:
-        return _error_result("http_error", f"EmailRep returned HTTP {status}", status)
-
-    try:
-        data = json.loads(body)
-    except ValueError:
-        return _error_result("invalid_response", "EmailRep response was not valid JSON")
-
-    return {"ok": True, "error": None, "detail": None, "status_code": 200, "raw": data}
-
-
-def fetch_abstractapi(email, api_key, timeout=REQUEST_TIMEOUT_SECONDS):
+def fetch_reputation(email, api_key, timeout=REQUEST_TIMEOUT_SECONDS):
     query = urllib.parse.urlencode({"api_key": api_key, "email": email})
     url = f"{ABSTRACTAPI_URL}?{query}"
     try:
@@ -163,134 +137,70 @@ def _bool_or_none(value):
     return value if isinstance(value, bool) else None
 
 
-def normalize_emailrep(raw):
-    """Flatten EmailRep's {top-level, details{}} shape into the shared signal vocabulary."""
+def normalize_reputation(raw):
+    """Flatten AbstractAPI's nested email_* groups into a flat signal dict."""
     if not raw:
         return {}
-    details = raw.get("details") or {}
-    return {
-        "reputation": raw.get("reputation"),
-        "suspicious": _bool_or_none(raw.get("suspicious")),
-        "references": raw.get("references"),
-        "domain_reputation": details.get("domain_reputation"),
-        "domain_exists": _bool_or_none(details.get("domain_exists")),
-        "blacklisted": _bool_or_none(details.get("blacklisted")),
-        "malicious_activity": _bool_or_none(details.get("malicious_activity")),
-        "malicious_activity_recent": _bool_or_none(details.get("malicious_activity_recent")),
-        "credentials_leaked": _bool_or_none(details.get("credentials_leaked")),
-        "credentials_leaked_recent": _bool_or_none(details.get("credentials_leaked_recent")),
-        "data_breach": _bool_or_none(details.get("data_breach")),
-        "first_seen": details.get("first_seen"),
-        "last_seen": details.get("last_seen"),
-        "new_domain": _bool_or_none(details.get("new_domain")),
-        "domain_age_days": details.get("days_since_domain_creation"),
-        "suspicious_tld": _bool_or_none(details.get("suspicious_tld")),
-        "is_free_email": _bool_or_none(details.get("free_provider")),
-        "is_disposable": _bool_or_none(details.get("disposable")),
-        "deliverable": _bool_or_none(details.get("deliverable")),
-        "is_catchall": _bool_or_none(details.get("accept_all")),
-        "valid_mx": _bool_or_none(details.get("valid_mx")),
-        "spoofable": _bool_or_none(details.get("spoofable")),
-        "spf_strict": _bool_or_none(details.get("spf_strict")),
-        "dmarc_enforced": _bool_or_none(details.get("dmarc_enforced")),
-        "profiles": details.get("profiles"),
-    }
+    deliverability = raw.get("email_deliverability") or {}
+    sender = raw.get("email_sender") or {}
+    domain = raw.get("email_domain") or {}
+    quality = raw.get("email_quality") or {}
+    risk = raw.get("email_risk") or {}
+    breaches = raw.get("email_breaches") or {}
 
-
-def _tri_state(field):
-    if not isinstance(field, dict):
-        return None
-    return _bool_or_none(field.get("value"))
-
-
-def normalize_abstractapi(raw):
-    """Flatten Abstract API's {value, text} tri-state fields into plain booleans."""
-    if not raw:
-        return {}
-    quality_score = raw.get("quality_score")
-    try:
-        quality_score = float(quality_score) if quality_score not in (None, "") else None
-    except (TypeError, ValueError):
-        quality_score = None
-
-    deliverability = raw.get("deliverability")
-    deliverable = {"DELIVERABLE": True, "UNDELIVERABLE": False}.get(deliverability)
+    total_breaches = breaches.get("total_breaches")
+    deliverable = {"deliverable": True, "undeliverable": False}.get(deliverability.get("status"))
 
     return {
-        "autocorrect": raw.get("autocorrect") or None,
-        "deliverability": deliverability,
+        "suggested_correction": raw.get("suggested_correction") or None,
+
+        "deliverability_status": deliverability.get("status"),
         "deliverable": deliverable,
-        "quality_score": quality_score,
-        "is_valid_format": _tri_state(raw.get("is_valid_format")),
-        "is_free_email": _tri_state(raw.get("is_free_email")),
-        "is_disposable": _tri_state(raw.get("is_disposable_email")),
-        "is_role": _tri_state(raw.get("is_role_email")),
-        "is_catchall": _tri_state(raw.get("is_catchall_email")),
-        "mx_found": _tri_state(raw.get("is_mx_found")),
-        "smtp_valid": _tri_state(raw.get("is_smtp_valid")),
+        "is_valid_format": _bool_or_none(deliverability.get("is_format_valid")),
+        "smtp_valid": _bool_or_none(deliverability.get("is_smtp_valid")),
+        "valid_mx": _bool_or_none(deliverability.get("is_mx_valid")),
+
+        "email_provider_name": sender.get("email_provider_name"),
+        "organization_name": sender.get("organization_name"),
+
+        "domain_age_days": domain.get("domain_age"),
+        "is_risky_tld": _bool_or_none(domain.get("is_risky_tld")),
+        "is_live_site": _bool_or_none(domain.get("is_live_site")),
+
+        "quality_score": quality.get("score"),
+        "is_free_email": _bool_or_none(quality.get("is_free_email")),
+        "is_username_suspicious": _bool_or_none(quality.get("is_username_suspicious")),
+        "is_disposable": _bool_or_none(quality.get("is_disposable")),
+        "is_catchall": _bool_or_none(quality.get("is_catchall")),
+        "is_role": _bool_or_none(quality.get("is_role")),
+        "spf_strict": _bool_or_none(quality.get("is_spf_strict")),
+        "dmarc_enforced": _bool_or_none(quality.get("is_dmarc_enforced")),
+
+        "address_risk": risk.get("address_risk_status"),
+        "domain_risk": risk.get("domain_risk_status"),
+
+        "total_breaches": total_breaches,
+        "data_breach": (total_breaches > 0) if isinstance(total_breaches, int) else None,
+        "date_first_breached": breaches.get("date_first_breached"),
+        "date_last_breached": breaches.get("date_last_breached"),
     }
 
 
-def _first_non_null(*values):
-    for v in values:
-        if v is not None:
-            return v
-    return None
-
-
-# Concepts both APIs report under the same name here -- EmailRep wins ties since
-# reputation is its whole purpose; Abstract API only fills gaps EmailRep left null.
-_SHARED_SIGNAL_KEYS = (
-    "reputation", "suspicious", "references", "domain_reputation", "domain_exists",
-    "blacklisted", "malicious_activity", "malicious_activity_recent",
-    "credentials_leaked", "credentials_leaked_recent", "data_breach",
-    "first_seen", "last_seen", "new_domain", "domain_age_days", "suspicious_tld",
-    "is_free_email", "is_disposable", "deliverable", "is_catchall",
-    "spoofable", "spf_strict", "dmarc_enforced", "profiles",
-)
-
-
-def merge_signals(emailrep_signals, abstract_signals):
-    er = emailrep_signals or {}
-    ab = abstract_signals or {}
-    merged = {key: _first_non_null(er.get(key), ab.get(key)) for key in _SHARED_SIGNAL_KEYS}
-    merged["valid_mx"] = _first_non_null(er.get("valid_mx"), ab.get("mx_found"))
-    # Abstract-API-only concepts -- no EmailRep equivalent to merge against.
-    merged["is_role"] = ab.get("is_role")
-    merged["is_valid_format"] = ab.get("is_valid_format")
-    merged["smtp_valid"] = ab.get("smtp_valid")
-    merged["quality_score"] = ab.get("quality_score")
-    merged["autocorrect"] = ab.get("autocorrect")
-    return merged
-
-
-def build_output(email, emailrep_result, abstract_result):
-    signals = merge_signals(
-        normalize_emailrep(emailrep_result.get("raw")),
-        normalize_abstractapi(abstract_result.get("raw")),
-    )
+def build_output(email, result):
     return {
         "email": email,
         "domain": domain_from_email(email),
-        "signals": signals,
-        "sources": {
-            "emailrep": {
-                "ok": emailrep_result["ok"],
-                "error": emailrep_result["error"],
-                "detail": emailrep_result["detail"],
-            },
-            "abstractapi": {
-                "ok": abstract_result["ok"],
-                "error": abstract_result["error"],
-                "detail": abstract_result["detail"],
-            },
+        "signals": normalize_reputation(result.get("raw")),
+        "source": {
+            "ok": result["ok"],
+            "error": result["error"],
+            "detail": result["detail"],
         },
-        "partial": not (emailrep_result["ok"] and abstract_result["ok"]),
     }
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Fetch and merge email reputation signals.")
+    parser = argparse.ArgumentParser(description="Fetch and normalize email reputation signals.")
     parser.add_argument("email", help="Email address to check")
     args = parser.parse_args(argv)
 
@@ -306,10 +216,9 @@ def main(argv=None):
         print(json.dumps({"fatal_error": "invalid_email", "email": args.email}))
         return 1
 
-    emailrep_result = fetch_emailrep(args.email, env["EMAILREP_API_KEY"], env["EMAILREP_USER_AGENT"])
-    abstract_result = fetch_abstractapi(args.email, env["ABSTRACTAPI_API_KEY"])
+    result = fetch_reputation(args.email, env["ABSTRACTAPI_API_KEY"])
 
-    print(json.dumps(build_output(args.email, emailrep_result, abstract_result), indent=2))
+    print(json.dumps(build_output(args.email, result), indent=2))
     return 0
 
 
