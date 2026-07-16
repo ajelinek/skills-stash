@@ -105,6 +105,11 @@ chapters, each with a title and a list of `{voice, text}` lines.
   nothing since it's still one voice throughout.
 - No embellishment, no rewriting, no interpretation -- if in doubt, prefer
   the more literal reading.
+- **Prosody control:** Use punctuation naturally (commas, semicolons, em-dashes)
+  to guide intonation. Add optional per-line `speed` overrides for pacing
+  variation (e.g., 0.9 for serious/reflective passages, 1.05 for energetic
+  ones). See [references/kokoro-prosody-guide.md](references/kokoro-prosody-guide.md)
+  for detailed techniques to prevent monotone reading.
 
 **Story mode:**
 - Read [references/story-mode-guide.md](references/story-mode-guide.md)
@@ -113,6 +118,11 @@ chapters, each with a title and a list of `{voice, text}` lines.
   whether/how to split lines across a narrator voice and a second voice.
 - The chapter structure doesn't have to mirror the source's own headings --
   build whatever chapter breaks serve the narrative you're writing.
+- **Prosody control:** Use voice assignment, punctuation, and optional per-line
+  `speed` to reinforce character personalities and emotional beats. A warm
+  narrator voice paired with fast speech (1.1) creates energy; a deeper voice
+  at 0.9 adds gravitas. See [references/kokoro-prosody-guide.md](references/kokoro-prosody-guide.md)
+  for techniques and examples.
 
 ## Step 4: Run the build
 
@@ -127,7 +137,8 @@ encodes the result as AAC in an `.m4b` container with the chapters embedded
 via `FFMETADATA1` and `genre=Audiobook` set (the tag that gets Apple
 Books/Podcasts/Overcast to treat it as an audiobook -- resume position,
 speed controls, real chapter navigation, instead of one flat unnavigable
-file). Takes an optional `--speed 0.5-2.0` (default `1.0`).
+file). Takes an optional `--speed 0.5-2.0` (default `1.0`) for global speed,
+or use per-line speeds in `script.json` for granular control.
 
 It validates the whole script up front -- missing fields, empty chapters,
 an unknown voice ID -- and fails on the first problem before synthesizing
@@ -136,6 +147,14 @@ runtime.
 
 On success it prints one JSON object to stdout with the output file path,
 runtime, total duration, and the chapter list.
+
+### Controlling Prosody and Expression with Kokoro
+
+Kokoro is a lightweight (82M parameter) TTS engine that prioritizes speed and
+clarity. It achieves natural-sounding narration without complex emotional
+markup through a combination of **punctuation, voice selection, and speed
+control**. See [references/kokoro-prosody-guide.md](references/kokoro-prosody-guide.md)
+for detailed techniques and examples.
 
 ## Step 5: Report back
 
@@ -192,8 +211,9 @@ to debug here.
 | File | Purpose |
 |---|---|
 | `scripts/extract_text.py` | Text extraction for `.md`/`.txt` (direct read) and `.docx`/`.pdf` (via `markitdown`); reports a specific failure reason rather than a silent empty result |
-| `scripts/build_audiobook.py` | The deterministic core: validates `script.json`, ensures the Kokoro model is cached, synthesizes every line, concatenates with pacing gaps, tracks chapter timestamps, encodes to `.m4b` with embedded `FFMETADATA1` chapters and audiobook metadata |
-| `references/script-schema.md` | The full `script.json` schema, field-by-field, plus what validation runs before synthesis and what comes back on success |
+| `scripts/build_audiobook.py` | The deterministic core: validates `script.json`, ensures the Kokoro model is cached, synthesizes every line with per-line speed support, concatenates with pacing gaps, tracks chapter timestamps, encodes to `.m4b` with embedded `FFMETADATA1` chapters and audiobook metadata |
+| `references/script-schema.md` | The full `script.json` schema, field-by-field, including optional per-line `speed` and prosody guidance |
 | `references/voice-roster.md` | The 6 curated voice IDs, their roles/notes, and how to choose between them in each mode |
 | `references/story-mode-guide.md` | How to rewrite source material into a themed narrative without fabricating content, and how to decide on narrator/character voice splits |
+| `references/kokoro-prosody-guide.md` | Detailed techniques for using Kokoro's punctuation, speed control, stress markup (`[word](±N)`), voice selection, and capitalization to create expressive narration and prevent flat/monotone reading |
 | `requirements.txt` | Fallback dependency list for a manual `pip install` if `uv` isn't available |

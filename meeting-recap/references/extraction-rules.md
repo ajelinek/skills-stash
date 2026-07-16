@@ -75,6 +75,15 @@ with a table row it doesn't earn.
   chatter, and scheduling-only exchanges -- unless scheduling *was* the
   point of the meeting.
 
+## Redundancy check
+
+Before presenting, scan the TL;DR against Decisions/Action Items, and scan
+Decision bullets against each other, for a fact or qualifier stated more
+than once (a format rule, a contrast, a named tool). Keep it in whichever
+spot is most load-bearing and cut it elsewhere. Don't let this turn into
+dropping the fact entirely -- precision on names/tools/numbers should
+survive even when the surrounding restatement gets cut.
+
 ## Open questions / parking lot
 
 Keep this structurally separate from Decisions so nothing undecided can be

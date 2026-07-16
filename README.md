@@ -43,6 +43,7 @@ npx skills add ajelinek/skills-stash cc-data-analyzer
 npx skills add ajelinek/skills-stash email-domain-reputation
 npx skills add ajelinek/skills-stash meeting-recap
 npx skills add ajelinek/skills-stash audiobook-creator
+npx skills add ajelinek/skills-stash grilling
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -62,6 +63,7 @@ npx skills add ajelinek/skills-stash audiobook-creator
 | `email-domain-reputation`      | Checks an email/domain's reputation via EmailRep + Abstract API Email Validation (stdlib-only Python, no install; keys never touch git or Claude's context), merges the results, and returns a Trust/Caution/Block verdict — plus an SPF/DMARC audit when the target is your own domain |
 | `meeting-recap`                | Turns a meeting/call transcript (VTT/SRT/plain-text export, stdlib-only Python parser, no install) into a short, skimmable recap — decisions, action items with owner + due date, topics, open questions — with hard `UNASSIGNED`/`TBD`/"unclear from transcript" fallbacks instead of ever guessing a name or date, and a length budget that scales to the meeting instead of one rigid template for everything |
 | `audiobook-creator`            | Converts a document (markdown/txt/docx/PDF/pasted text) into a chaptered `.m4b` audiobook using fully local, offline neural TTS (Kokoro-82M) — no cloud API, no per-use cost. Plain mode reads the source verbatim in one voice; Story mode rewrites dry/dense material into an engaging themed narrative with automatic narrator/character multi-voice assignment. Real chapter markers embedded via FFMETADATA1, not raw MP3s or a playlist file |
+| `grilling`                     | Interview-driven stress test for a plan, decision, or idea: walks the decision tree one question at a time, recommends an answer for each, looks up anything discoverable instead of asking, and withholds action until the user confirms shared understanding |
 
 ---
 

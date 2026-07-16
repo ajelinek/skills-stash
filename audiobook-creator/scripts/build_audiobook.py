@@ -135,6 +135,7 @@ def load_script(path: Path) -> dict:
         for j, line in enumerate(lines):
             voice = line.get("voice")
             text = line.get("text", "").strip()
+            speed = line.get("speed")
             if voice not in VOICE_ROSTER:
                 fail(
                     f"chapter {i} line {j} uses unknown voice {voice!r}. "
@@ -142,6 +143,8 @@ def load_script(path: Path) -> dict:
                 )
             if not text:
                 fail(f"chapter {i} line {j} has empty text")
+            if speed is not None and (not isinstance(speed, (int, float)) or speed < 0.5 or speed > 2.0):
+                fail(f"chapter {i} line {j} has invalid speed {speed!r}. Must be a number between 0.5 and 2.0")
             line["text"] = text
 
     return data
@@ -168,12 +171,14 @@ def synthesize(script: dict, speed: float) -> tuple[np.ndarray, list[dict]]:
         start_ms = cursor_ms
         for li, line in enumerate(chapter["lines"]):
             line_num += 1
+            # Use per-line speed if specified, otherwise use global speed
+            line_speed = line.get("speed", speed)
             print(
                 f"  [{line_num}/{total_lines}] chapter {ci + 1}/{len(chapters)} "
-                f"({chapter['title']!r}) voice={line['voice']}",
+                f"({chapter['title']!r}) voice={line['voice']} speed={line_speed}",
                 file=sys.stderr,
             )
-            samples, sr = kokoro.create(line["text"], voice=line["voice"], speed=speed, lang=lang)
+            samples, sr = kokoro.create(line["text"], voice=line["voice"], speed=line_speed, lang=lang)
             assert sr == SAMPLE_RATE
             audio_parts.append(samples)
             cursor_ms += int(len(samples) / SAMPLE_RATE * 1000)

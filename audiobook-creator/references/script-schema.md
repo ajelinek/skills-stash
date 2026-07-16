@@ -37,7 +37,8 @@ uv run <skill_dir>/scripts/build_audiobook.py <path-to-script.json>
 | `lang` | no | Defaults to `en-us`. Only change this if the source content is genuinely in another language Kokoro supports. |
 | `chapters` | yes | Non-empty list. Each chapter needs a non-empty `title` and a non-empty `lines` list. |
 | `lines[].voice` | yes | Must be one of the 6 roster IDs in [voice-roster.md](voice-roster.md). Anything else is a hard error -- the script validates this before synthesizing anything. |
-| `lines[].text` | yes | Plain prose. Strip markdown syntax (`**bold**`, `[text](url)`, etc.) before writing it here -- whatever's in `text` gets read aloud exactly as-is. |
+| `lines[].text` | yes | Plain prose. Strip markdown syntax (`**bold**`, `[text](url)`, etc.) before writing it here -- whatever's in `text` gets read aloud exactly as-is. For prosody techniques (emphasis, pausing, stress), see [kokoro-prosody-guide.md](kokoro-prosody-guide.md). |
+| `lines[].speed` | no | Optional per-line speed override, 0.5–2.0. If omitted, uses the global `--speed` from the build command (default 1.0). Use for dramatic pacing changes (slower for serious moments, faster for energetic passages). |
 
 ## Why "lines" and not just one big block of text per chapter
 
