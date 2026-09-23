@@ -155,7 +155,17 @@ Certain words and patterns are dead giveaways that a model wrote the text, not a
  
 **Stock phrases and transitions**: "it's important to note that," "in today's fast-paced world," "in conclusion," moreover, furthermore, consequently, notably, importantly, "unlock the potential," "cutting-edge," "revolutionize the way," "win-win situation," "let's dive in."
  
-**Sentence patterns**: "It's not just X. It's Y." / "No X. No Y. Just Z." These rhythmic contrast constructions read as templated, not composed.
+**Negative parallelism** (aka contrastive antithesis, the "not X, it's Y" construction): staging a strawman version of a claim just to knock it down, instead of stating the claim directly. This is the single most-documented AI writing tell — studies found LLMs use it roughly 3x more often than human writers. Use it very sparingly to not at all. Watch for:
+
+- Core form: "It's not X, it's Y." → *"This isn't a bug fix, it's a redesign."*
+- Not-only-but-also: "Not only X, but Y." → *"This doesn't just fix the crash, it prevents the whole class of bugs."*
+- Rather-than: "Y rather than X." → *"We optimized for clarity rather than cleverness."*
+- Negative-list-then-pivot: "No X, no Y, just Z." → *"No config, no boilerplate, just a working API."*
+- Scope-fencing negation: "We do X and Y. We don't do Z / not in this scenario." → *"We support async writes. We don't support sync fallback."* Stacking a capability claim with an immediate list of what it isn't, instead of just stating the positive claim plainly.
+
+Fix: say the true thing once, directly. If a caveat is genuinely needed, give it once, plainly — "We do X and Y" full stop, or "We do X and Y; Z is out of scope" if the boundary actually matters — without staging a false contrast first.
+
+Related tells worth catching in the same pass: rule-of-three padding ("fast, reliable, and scalable") and false ranges that imply a spectrum with no real endpoints ("from quick scripts to enterprise pipelines"). Same instinct toward hollow, templated rhythm instead of a real claim.
  
 **Punctuation**: watch em dashes (—) and en dashes (–). AI writing leans on em dashes constantly for dramatic pauses and asides — real writers use them occasionally, not in nearly every paragraph. Default to a period, comma, colon, or parenthesis instead. An em dash is fine when it's genuinely the clearest option, but if a paragraph has more than one, that's a signal to break the sentence up or repunctuate.
  
