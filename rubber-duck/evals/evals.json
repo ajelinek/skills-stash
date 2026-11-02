@@ -1,0 +1,40 @@
+{
+  "skill_name": "rubber-duck",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review the pasted fulfillment design against its goal and constraints. Goal: one fulfillment per paid order despite concurrent payment notifications and crashes, with automatic retry after a transient failure. Existing facts: the app already has a transactional SQL database with an orders table, and the fulfillment service accepts an order ID as an idempotency key. Proposed design: add Redis. On each notification, write SETNX(order_id) with a 24-hour TTL before calling fulfillment. If SETNX fails, acknowledge and skip the event. Never remove the key after an error, because duplicates are dangerous. Rationale: the Redis marker ensures exactly-once processing, so no schema or fulfillment API changes are needed. Constraint: do not add dependencies or change public API contracts. Return grounded feedback and the smallest useful improvement; do not edit files or assume facts beyond those supplied.",
+      "expected_output": "A Duck contract test catches that recording the marker before fulfillment can lose the order after a crash or transient error, that expiry reopens duplicate processing, and that adding Redis violates constraints. It suggests investigating reuse of existing durable state and the supported idempotency key without claiming exactly-once effects from a marker alone.",
+      "files": [],
+      "expectations": [
+        "Identifies the pre-fulfillment marker crash/error window that prevents the required automatic retry.",
+        "Explains that 24-hour expiry can admit duplicate fulfillment and a Redis marker alone does not establish exactly-once effects.",
+        "Flags adding Redis as inconsistent with the no-new-dependencies constraint and proposes reuse of existing durable state/idempotency support.",
+        "Does not claim executed checks or guarantee exactly-once fulfillment without stated downstream support."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this completed handler and its tests for consequential defects. Goal: GET /orders/:id must return an order only to its owner; a nonexistent or unowned order must yield 404. The trusted session provides req.user.id. Current code: const order = await db.orders.findById(req.params.id); if (!order) return res.status(404).end(); return res.json(order). Tests create a single user and that user's order, then assert that the owner receives 200 with the order ID. No other tests exist. The implementation note says 'IDs are random so unauthorized access is impossible; the owner test proves authorization.' Keep the 404 contract, do not introduce dependencies, don't run tests or edit files, and identify concrete missing checks/cases rather than style improvements.",
+      "expected_output": "An Adversary contract test finds missing ownership authorization with a second-user counterexample, explains why random IDs and the current success-path test do not establish authorization, and proposes an owner-scoped lookup plus missing/unowned-order regression cases preserving 404. It does not invent an unauthenticated response contract or claim tests ran.",
+      "files": [],
+      "expectations": [
+        "Identifies missing ownership authorization and gives a second-user/unowned-order counterexample.",
+        "Explains that random identifiers and a single owner-success test do not prove authorization.",
+        "Proposes an ownership check/scoped query and missing/unowned-order tests while preserving 404.",
+        "Does not add dependencies, invent a new authentication response requirement, or claim tests ran."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this small, complete design for consequential problems, not hypothetical future requirements. Goal: for this non-sensitive UI, return the first 10 unique strings in their original order, comparing exact case-sensitive strings. Input is already validated as an array of at most 100 strings. There is no persistence, network, concurrency, localization, or performance requirement beyond that bound. Algorithm: initialize an empty Set and output list; scan input left to right; when a string is absent from the Set, add it to the Set and append it to output; stop once output has 10 entries; return output. Stated examples: [] -> []; ['a','a','b'] -> ['a','b']; ['A','a'] -> ['A','a']; 12 distinct strings -> their first 10. Don't edit files or run code. Report no substantive findings if it is sound; don't add normalization or a library.",
+      "expected_output": "An Adversary contract test reports no substantive defect in the scoped algorithm, respects exact case-sensitive comparison and bounded input, and avoids invented normalization, dependencies, security/concurrency requirements, or claims of executed tests.",
+      "files": [],
+      "expectations": [
+        "Reports no substantive defect in the specified bounded algorithm.",
+        "Preserves exact case-sensitive comparison and does not introduce normalization, libraries, or unrelated requirements.",
+        "Does not claim code/tests were executed."
+      ]
+    }
+  ]
+}

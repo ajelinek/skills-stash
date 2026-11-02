@@ -6,3 +6,6 @@
 
 # Build outputs
 dist/
+
+# Local skill evaluation output
+/rubber-duck-workspace/

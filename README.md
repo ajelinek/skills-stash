@@ -40,6 +40,7 @@ npx skills add ajelinek/skills-stash firebase-dynamic-ports-setup
 npx skills add ajelinek/skills-stash email-domain-reputation
 npx skills add ajelinek/skills-stash website-health-analytics
 npx skills add ajelinek/skills-stash jelinek-writing
+npx skills add ajelinek/skills-stash rubber-duck
 ```
 
 | Skill                          | What it does                                                                                                                                          |
@@ -56,6 +57,10 @@ npx skills add ajelinek/skills-stash jelinek-writing
 | `email-domain-reputation`      | Checks an email/domain's reputation via EmailRep + Abstract API Email Validation (stdlib-only Python, no install; keys never touch git or Claude's context), merges the results, and returns a Trust/Caution/Block verdict — plus an SPF/DMARC audit when the target is your own domain |
 | `website-health-analytics`     | Correlates GA4, Google Search Console, Firebase Auth signups, and GitHub deploys/commits/PRs into one canonical timeline, detects statistically significant anomalies, and traces a confirmed anomaly back to the commit, file, and line that likely caused it |
 | `jelinek-writing`              | Writes and revises prose in a clear, direct, human voice for docs, specs, RFCs, design docs, release notes, PR descriptions, and similar people-facing writing — new writing and cleanup alike, preserving the user's intent |
+| `rubber-duck`                  | Explicit, grounded Duck → improve → Adversary review of plans, designs, code, or tests; requires two configured read-only agents and keeps fixes with the producer |
+
+`rubber-duck` includes agent templates, but installing the skill does not register them. Configure
+both agents and their models using its [setup guidance](rubber-duck/references/setup.md) before use.
 
 ---
 
